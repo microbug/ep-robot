@@ -1,1 +1,3 @@
 *.ino
+*.sublime-project
+*.sublime-workspace
