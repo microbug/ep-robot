@@ -20,11 +20,11 @@ int dir1_pin_r = 5;
 int dir2_pin_r = 6;
 int pwm_pin_r = 7;
 
-// Define MPU9250
+// Define MPU9250 (actually MPU9255)
 MPU9250 IMU;
 
-
 void setup() {
+  Wire.begin();
   Serial.begin(115200);
   Serial.println("Running setup()");
 
@@ -36,7 +36,7 @@ void setup() {
   pinMode(pwm_pin_r, OUTPUT);
 
   // Run self test on LCD
-  Serial.println("Testing LCD");
+  Serial.println("\r\nTesting LCD");
   LCD.begin(16, 2);
   LCD.print("ABCDEFGHIJKLMNOP");
   LCD.setCursor(0, 1);
@@ -47,7 +47,7 @@ void setup() {
   Serial.println("LCD test complete");
 
   // Run self test on motors
-  Serial.println("Running motor test");
+  Serial.println("\r\nRunning motor test");
   left_motor_set_velocity(255, true);
   right_motor_set_velocity(255, false);
   delay(1000);
@@ -58,8 +58,25 @@ void setup() {
   right_motor_set_velocity(0, false);
   Serial.println("Completed motor test");
 
-  // Run self test on IMU and report results
-  Serial.println("Running IMU self test");
+  Serial.println("\r\nBeginning IMU tests");
+  byte c = IMU.readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
+  Serial.print("MPU9255 has address "); Serial.println(c, HEX);
+  Serial.print("MPU9255 should have address "); Serial.println(0x73, HEX);
+  if (c != 0x73) {
+    Serial.println("ERROR: MPU9255 did not have expected address");
+    while (1) {}
+  }
+
+  byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
+  Serial.print("AK8963 has address "); Serial.println(d, HEX);
+  Serial.print("AK8963 should have address "); Serial.println(0x48, HEX);
+  if (d != 0x48) {
+    Serial.println("ERROR: AK8963 did not have expected address");
+    while (1) {}
+  }
+
+  // Run self test and calibration on IMU and report results
+  Serial.println("Running IMU internal self test");
   IMU.MPU9250SelfTest(IMU.SelfTest);
   Serial.print("x-axis self test: acceleration trim within : ");
   Serial.print(IMU.SelfTest[0], 1); Serial.println("% of factory value");
@@ -73,11 +90,15 @@ void setup() {
   Serial.print(IMU.SelfTest[4], 1); Serial.println("% of factory value");
   Serial.print("z-axis self test: gyration trim within : ");
   Serial.print(IMU.SelfTest[5], 1); Serial.println("% of factory value");
-  Serial.println("Completed IMU self test");
-
+  Serial.println("Completed IMU internal self test, running IMU calibration");
+  IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias);
+  Serial.println("Calibrated IMU, beginning IMU initialisation");
   IMU.initMPU9250();
+  Serial.println("Completed IMU initialisation");
 
-  Serial.println("Sketch ready");
+  LCD.clear();
+  LCD.print("Ready");
+  Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
 }
 
 
