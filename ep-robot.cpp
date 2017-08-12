@@ -1,6 +1,10 @@
 // Copyright 2017 Richard Coleman
+
+// For LCD
 #include <LiquidCrystal.h>
+// For MPU-9250
 #include <MPU9250.h>
+#include <quaternionFilters.h>
 
 // Initialise LiquidCrystal as lcd
 //                RS  RW  EN  D4  D5  D6  D7
@@ -13,6 +17,9 @@ int pwm_pin_l = 2;
 int dir1_pin_r = 5;
 int dir2_pin_r = 6;
 int pwm_pin_r = 7;
+
+// Define MPU9250
+MPU9250 IMU;
 
 
 void setup() {
@@ -28,6 +35,33 @@ void setup() {
 
   lcd.begin(16, 2);
   lcd.print("LCD working :)");
+
+  Serial.println("Testing motors");
+  left_motor_set_velocity(256, true);
+  right_motor_set_velocity(256, true);
+  delay(1000);
+  left_motor_set_velocity(256, false);
+  right_motor_set_velocity(256, false);
+  delay(1000);
+  left_motor_set_velocity(0, false);
+  right_motor_set_velocity(0, false);
+  Serial.println("Finished testing motors");
+
+  // Run self test on IMU and report results
+  Serial.println("Running IMU self test")
+  IMU.MPU9250SelfTest(IMU.SelfTest);
+  Serial.print("x-axis self test: acceleration trim within : ");
+  Serial.print(IMU.SelfTest[0], 1); Serial.println("% of factory value");
+  Serial.print("y-axis self test: acceleration trim within : ");
+  Serial.print(IMU.SelfTest[1], 1); Serial.println("% of factory value");
+  Serial.print("z-axis self test: acceleration trim within : ");
+  Serial.print(IMU.SelfTest[2], 1); Serial.println("% of factory value");
+  Serial.print("x-axis self test: gyration trim within : ");
+  Serial.print(IMU.SelfTest[3], 1); Serial.println("% of factory value");
+  Serial.print("y-axis self test: gyration trim within : ");
+  Serial.print(IMU.SelfTest[4], 1); Serial.println("% of factory value");
+  Serial.print("z-axis self test: gyration trim within : ");
+  Serial.print(IMU.SelfTest[5], 1); Serial.println("% of factory value");
 
   Serial.println("Sketch ready");
 }
@@ -80,10 +114,5 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 
 
 void loop() {
-  left_motor_set_velocity(0, true);
-  right_motor_set_velocity(128, true);
-  delay(1000);
-  left_motor_set_velocity(128, true);
-  right_motor_set_velocity(0, true);
-  delay(1000);
+
 }
