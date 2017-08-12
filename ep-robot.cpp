@@ -6,14 +6,16 @@
 #include <MPU9250.h>
 #include <quaternionFilters.h>
 
-// Initialise LiquidCrystal as lcd
+// Initialise LiquidCrystal as LCD
 //                RS  RW  EN  D4  D5  D6  D7
-LiquidCrystal lcd(53, 51, 49, 47, 45, 43, 41);
+LiquidCrystal LCD(53, 51, 49, 47, 45, 43, 41);
 
-// L298N Pins
+// Define L298N pins
+//  Left
 int dir1_pin_l = 3;
 int dir2_pin_l = 4;
 int pwm_pin_l = 2;
+//  Right
 int dir1_pin_r = 5;
 int dir2_pin_r = 6;
 int pwm_pin_r = 7;
@@ -33,17 +35,19 @@ void setup() {
   pinMode(dir2_pin_r, OUTPUT);
   pinMode(pwm_pin_r, OUTPUT);
 
+  // Run self test on LCD
   Serial.println("Testing LCD");
-  lcd.begin(16, 2);
-  lcd.print("XXXXXXXXXXXXXXXX");
-  lcd.setCursor(0, 1);
-  lcd.print("XXXXXXXXXXXXXXXX");
+  LCD.begin(16, 2);
+  LCD.print("ABCDEFGHIJKLMNOP");
+  LCD.setCursor(0, 1);
+  LCD.print("QRSTUVWXYZ123456");
   delay(1000);
-  lcd.clear();
-  lcd.print("Initialising...");
+  LCD.clear();
+  LCD.print("Initialising...");
   Serial.println("LCD test complete");
 
-  Serial.println("Testing motors");
+  // Run self test on motors
+  Serial.println("Running motor test");
   left_motor_set_velocity(255, true);
   right_motor_set_velocity(255, false);
   delay(1000);
@@ -52,7 +56,7 @@ void setup() {
   delay(1000);
   left_motor_set_velocity(0, false);
   right_motor_set_velocity(0, false);
-  Serial.println("Finished testing motors");
+  Serial.println("Completed motor test");
 
   // Run self test on IMU and report results
   Serial.println("Running IMU self test");
@@ -69,6 +73,9 @@ void setup() {
   Serial.print(IMU.SelfTest[4], 1); Serial.println("% of factory value");
   Serial.print("z-axis self test: gyration trim within : ");
   Serial.print(IMU.SelfTest[5], 1); Serial.println("% of factory value");
+  Serial.println("Completed IMU self test");
+
+  IMU.initMPU9250();
 
   Serial.println("Sketch ready");
 }
