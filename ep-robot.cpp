@@ -1,5 +1,6 @@
 // Copyright 2017 Richard Coleman
 #include <LiquidCrystal.h>
+#include <MPU9250.h>
 
 // Initialise LiquidCrystal as lcd
 //                RS  RW  EN  D4  D5  D6  D7
