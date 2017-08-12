@@ -31,53 +31,6 @@ void setup() {
   Serial.println("Sketch ready");
 }
 
-// void motor_set_velocity(bool right_motor, int velocity) {
-//   /*
-//    * bool right_motor: whether to program the right motor
-//    * int velocity: -128 to 128; velocity of motor
-//    */
-//   if (velocity < -128 || velocity > 128) {
-//     Serial.println("Error: velocity out of bounds");
-//   } else {
-//     Serial.println("-- Setting motor velocity --");
-//   }
-
-//   int pwm_pin;
-//   int dir1_pin;
-//   int dir2_pin;
-
-//   Serial.println("velocity=");
-//   Serial.println(velocity);
-//   switch (motor) {
-//     case 'L':
-//       Serial.println("motor=L");
-//       pwm_pin = pwm_pin_l;
-//       dir1_pin = dir1_pin_l;
-//       dir2_pin = dir2_pin_l;
-
-//     case 'R':
-//       Serial.println("motor=R");
-//       pwm_pin = pwm_pin_r;
-//       dir1_pin = dir1_pin_r;
-//       dir2_pin = dir2_pin_r;
-//   }
-
-//   if (velocity == 0) {
-//     analogWrite(pwm_pin, 0);
-//   }
-
-//   if (velocity > 0) {
-//     analogWrite(pwm_pin, velocity);
-//     digitalWrite(dir1_pin, LOW);
-//     digitalWrite(dir2_pin, HIGH);
-//   }
-
-//   if (velocity < 0) {
-//     analogWrite(pwm_pin, (velocity * -1));
-//     digitalWrite(dir1_pin, HIGH);
-//     digitalWrite(dir2_pin, LOW);
-//   }
-// }
 
 void left_motor_set_velocity(unsigned int speed, bool clockwise) {
   /*
