@@ -1,2 +1,2 @@
-# ep-robot
-Robot built for an EPQ
+# EP Robot
+A robot built for an EPQ
