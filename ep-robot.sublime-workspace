@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"velocity",
+				"velocity"
+			],
+			[
 				"lofile",
 				"logfile_location"
 			],
@@ -23,13 +27,6 @@
 	},
 	"buffers":
 	[
-		{
-			"settings":
-			{
-				"buffer_size": 0,
-				"line_ending": "Unix"
-			}
-		}
 	],
 	"build_system": "",
 	"build_system_choices":
@@ -39,9 +36,21 @@
 	"command_palette":
 	{
 		"height": 375.0,
-		"last_filter": "ssyam",
+		"last_filter": "ssc",
 		"selected_items":
 		[
+			[
+				"ssc",
+				"Set Syntax: C"
+			],
+			[
+				"sltl",
+				"SublimeLinter: Toggle Linter"
+			],
+			[
+				"sublimelintertl",
+				"SublimeLinter: Toggle Linter"
+			],
 			[
 				"ssyam",
 				"Set Syntax: YAML"
@@ -82,8 +91,15 @@
 		"side_bar_visible": false,
 		"status_bar_visible": false
 	},
+	"expanded_folders":
+	[
+		"/Users/richard/Documents/SoftDev/ep-robot"
+	],
 	"file_history":
 	[
+		"/Users/richard/Documents/SoftDev/ep-robot/.gitignore",
+		"/Users/richard/Documents/SoftDev/ep-robot/ep-robot.cpp",
+		"/Users/richard/Documents/SoftDev/ep-robot/ep-robot.c",
 		"/Users/richard/Documents/SoftDev/docker/deluge/potassium-deluge/start.sh",
 		"/Users/richard/Documents/SoftDev/docker/.credentials/openvpn.env",
 		"/Users/richard/Documents/SoftDev/docker/deluge/docker-compose.yaml",
@@ -118,7 +134,7 @@
 	],
 	"find":
 	{
-		"height": 23.0
+		"height": 49.0
 	},
 	"find_in_files":
 	{
@@ -133,6 +149,8 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"wire",
+			"TWBR",
 			"snmp",
 			"$PGID",
 			"$PUID",
@@ -158,49 +176,8 @@
 	"groups":
 	[
 		{
-			"selected": 0,
 			"sheets":
 			[
-				{
-					"buffer": 0,
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 0,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage",
-							"vintage":
-							{
-								"action": null,
-								"action_count": "",
-								"mode": "mode_normal",
-								"motion": null,
-								"motion_count": "",
-								"must_capture_register_name": false,
-								"partial_sequence": "",
-								"register": "\"",
-								"sequence": "",
-								"xpos": 0
-							}
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 0,
-					"type": "text"
-				}
 			]
 		}
 	],
@@ -296,8 +273,10 @@
 	"selected_group": 0,
 	"settings":
 	{
+		"_vintageous_reset_during_init": true,
 		"vintage":
 		{
+			"_cmdline_cd": "/Users/richard/Documents/SoftDev/ep-robot"
 		}
 	},
 	"show_minimap": true,
