@@ -2,7 +2,7 @@
 
 // For LCD
 #include <LiquidCrystal.h>
-// For MPU-9250
+// For MPU-9255
 #include <MPU9250.h>
 #include <quaternionFilters.h>
 
@@ -64,14 +64,6 @@ void setup() {
   Serial.print("MPU9255 should have address "); Serial.println(0x73, HEX);
   if (c != 0x73) {
     Serial.println("ERROR: MPU9255 did not have expected address");
-    while (1) {}
-  }
-
-  byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
-  Serial.print("AK8963 has address "); Serial.println(d, HEX);
-  Serial.print("AK8963 should have address "); Serial.println(0x48, HEX);
-  if (d != 0x48) {
-    Serial.println("ERROR: AK8963 did not have expected address");
     while (1) {}
   }
 
