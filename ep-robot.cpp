@@ -347,13 +347,13 @@ void loop() {
     ax = (static_cast<float>(accelCount[0]) * aRes) - accelBias[0];  // get actual g value, this depends on scale being set
     ay = (static_cast<float>(accelCount[1]) * aRes) - accelBias[1];
     az = (static_cast<float>(accelCount[2]) * aRes) - accelBias[2];
-    // Serial.print("MPU9255 accelerometer reading (mg): x=");
-    // Serial.print(static_cast<int>(1000*ax));
-    // Serial.print(" y=");
-    // Serial.print(static_cast<int>(1000*ay));
-    // Serial.print(" z=");
-    // Serial.print(static_cast<int>(1000*az));
-    // Serial.println(" ");
+    Serial.print("MPU9255 accelerometer reading (mg): x=");
+    Serial.print(static_cast<int>(1000*ax));
+    Serial.print(" y=");
+    Serial.print(static_cast<int>(1000*ay));
+    Serial.print(" z=");
+    Serial.print(static_cast<int>(1000*az));
+    Serial.println(" ");
 
     readGyroData(gyroCount);
     getGres();
@@ -361,26 +361,20 @@ void loop() {
     gx = (static_cast<float>(gyroCount[0]) * gRes);
     gy = (static_cast<float>(gyroCount[1]) * gRes);
     gz = (static_cast<float>(gyroCount[2]) * gRes);
-    // Serial.print("MPU9255 gyrometer reading (°/s): x=");
-    // Serial.print(static_cast<int>(gx));
-    // Serial.print(" y=");
-    // Serial.print(static_cast<int>(gy));
-    // Serial.print(" z=");
-    // Serial.print(static_cast<int>(gz));
-    // Serial.println(" ");
-
-    // Serial.print(static_cast<int>(1000*ax));
-    // Serial.print(",");
-    // Serial.print(static_cast<int>(1000*ay));
-    // Serial.print(",");
-    // Serial.print(static_cast<int>(1000*az));
-    // Serial.print(",");
+    Serial.print("MPU9255 gyrometer reading (°/s): x=");
     Serial.print(static_cast<int>(gx));
-    Serial.print(",");
+    Serial.print(" y=");
     Serial.print(static_cast<int>(gy));
-    Serial.print(",");
+    Serial.print(" z=");
     Serial.print(static_cast<int>(gz));
-    Serial.print("\n");
+    Serial.println(" ");
+
+    Serial.print(static_cast<int>(1000*ax));
+    Serial.print(",");
+    Serial.print(static_cast<int>(1000*ay));
+    Serial.print(",");
+    Serial.print(static_cast<int>(1000*az));
+    Serial.print(",");
   
   }
   delay(100);
