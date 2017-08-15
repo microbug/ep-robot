@@ -369,12 +369,6 @@ void loop() {
     Serial.print(static_cast<int>(gz));
     Serial.println(" ");
 
-    Serial.print(static_cast<int>(1000*ax));
-    Serial.print(",");
-    Serial.print(static_cast<int>(1000*ay));
-    Serial.print(",");
-    Serial.print(static_cast<int>(1000*az));
-    Serial.print(",");
   
   }
   delay(100);
