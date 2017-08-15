@@ -206,7 +206,7 @@ float ax, ay, az, gx, gy, gz;  // Variables to hold latest sensor data values
 void setup() {
   Wire.begin();
   Serial.begin(115200);
-  Serial.println("\r\n--------------- RUNNING SETUP ---------------\r\n");
+  //**Serial.println("\r\n--------------- RUNNING SETUP ---------------\r\n");
 
   pinMode(dir1_pin_l, OUTPUT);
   pinMode(dir2_pin_l, OUTPUT);
@@ -216,7 +216,7 @@ void setup() {
   pinMode(pwm_pin_r, OUTPUT);
 
   // Run self test on LCD
-  Serial.println("\r\nTesting LCD");
+  //**Serial.println("\r\nTesting LCD");
   LCD.begin(16, 2);
   LCD.print("ABCDEFGHIJKLMNOP");
   LCD.setCursor(0, 1);
@@ -224,10 +224,10 @@ void setup() {
   delay(1000);
   LCD.clear();
   LCD.print("Initialising...");
-  Serial.println("LCD test complete");
+  //**Serial.println("LCD test complete");
 
   // Run self test on motors
-  Serial.println("\r\nRunning motor test");
+  //**Serial.println("\r\nRunning motor test");
   left_motor_set_velocity(255, true);
   right_motor_set_velocity(255, false);
   delay(1000);
@@ -236,58 +236,58 @@ void setup() {
   delay(1000);
   left_motor_set_velocity(0, false);
   right_motor_set_velocity(0, false);
-  Serial.println("Completed motor test");
+  //**Serial.println("Completed motor test");
 
-  Serial.println("\r\nBeginning IMU tests");
+  //**Serial.println("\r\nBeginning IMU tests");
   byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
-  Serial.print("MPU9255 has address "); Serial.println(c, HEX);
-  Serial.print("MPU9255 should have address "); Serial.println(0x73, HEX);
+  //**Serial.print("MPU9255 has address "); //**Serial.println(c, HEX);
+  //**Serial.print("MPU9255 should have address "); //**Serial.println(0x73, HEX);
   if (c != 0x73) {
-    Serial.println("ERROR: MPU9255 did not have expected address");
+    //**Serial.println("ERROR: MPU9255 did not have expected address");
     while (1) {}
   }
 
   // Run self test and calibration on IMU and report results
-  Serial.println("Running IMU internal self test");
+  //**Serial.println("Running IMU internal self test");
   MPU9250SelfTest(SelfTest);
-  Serial.print("x-axis self test: acceleration trim within : ");
-  Serial.print(SelfTest[0], 1); Serial.println("% of factory value");
-  Serial.print("y-axis self test: acceleration trim within : ");
-  Serial.print(SelfTest[1], 1); Serial.println("% of factory value");
-  Serial.print("z-axis self test: acceleration trim within : ");
-  Serial.print(SelfTest[2], 1); Serial.println("% of factory value");
-  Serial.print("x-axis self test: gyration trim within : ");
-  Serial.print(SelfTest[3], 1); Serial.println("% of factory value");
-  Serial.print("y-axis self test: gyration trim within : ");
-  Serial.print(SelfTest[4], 1); Serial.println("% of factory value");
-  Serial.print("z-axis self test: gyration trim within : ");
-  Serial.print(SelfTest[5], 1); Serial.println("% of factory value");
-  Serial.println("Completed IMU internal self test, running IMU calibration");
+  //**Serial.print("x-axis self test: acceleration trim within : ");
+  //**Serial.print(SelfTest[0], 1); //**Serial.println("% of factory value");
+  //**Serial.print("y-axis self test: acceleration trim within : ");
+  //**Serial.print(SelfTest[1], 1); //**Serial.println("% of factory value");
+  //**Serial.print("z-axis self test: acceleration trim within : ");
+  //**Serial.print(SelfTest[2], 1); //**Serial.println("% of factory value");
+  //**Serial.print("x-axis self test: gyration trim within : ");
+  //**Serial.print(SelfTest[3], 1); //**Serial.println("% of factory value");
+  //**Serial.print("y-axis self test: gyration trim within : ");
+  //**Serial.print(SelfTest[4], 1); //**Serial.println("% of factory value");
+  //**Serial.print("z-axis self test: gyration trim within : ");
+  //**Serial.print(SelfTest[5], 1); //**Serial.println("% of factory value");
+  //**Serial.println("Completed IMU internal self test, running IMU calibration");
 
   calibrateMPU9250(gyroBias, accelBias);
-  Serial.print("MPU9255 accelerometer bias (mg): x=");
-  Serial.print((int)(1000*accelBias[0]));
-  Serial.print(" y=");
-  Serial.print((int)(1000*accelBias[1]));
-  Serial.print(" z=");
-  Serial.print((int)(1000*accelBias[2]));
-  Serial.println(" ");
-  Serial.print("MPU9255 gyrometer bias (deg/s): x=");
-  Serial.print(gyroBias[0], 1);
-  Serial.print(" y=");
-  Serial.print(gyroBias[1], 1);
-  Serial.print(" z=");
-  Serial.print(gyroBias[2], 1);
-  Serial.println(" ");
+  //**Serial.print("MPU9255 accelerometer bias (mg): x=");
+  //**Serial.print((int)(1000*accelBias[0]));
+  //**Serial.print(" y=");
+  //**Serial.print((int)(1000*accelBias[1]));
+  //**Serial.print(" z=");
+  //**Serial.print((int)(1000*accelBias[2]));
+  //**Serial.println(" ");
+  //**Serial.print("MPU9255 gyrometer bias (deg/s): x=");
+  //**Serial.print(gyroBias[0], 1);
+  //**Serial.print(" y=");
+  //**Serial.print(gyroBias[1], 1);
+  //**Serial.print(" z=");
+  //**Serial.print(gyroBias[2], 1);
+  //**Serial.println(" ");
 
 
-  Serial.println("Calibrated IMU, beginning IMU initialisation");
+  //**Serial.println("Calibrated IMU, beginning IMU initialisation");
   initMPU9250();
-  Serial.println("Completed IMU initialisation");
+  //**Serial.println("Completed IMU initialisation");
 
   LCD.clear();
   LCD.print("Ready");
-  Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
+  //**Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
 }
 
 
@@ -296,7 +296,7 @@ void left_motor_set_velocity(unsigned int speed, bool clockwise) {
    * int speed: speed from 0 to 255
    * bool clockwise: whether to turn clockwise or anticlockwise
    */
-  Serial.println("Setting left motor velocity");
+  //**Serial.println("Setting left motor velocity");
 
   if (speed == 0) {
     analogWrite(pwm_pin_l, 0);
@@ -319,7 +319,7 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
    * int speed: speed from 0 to 255
    * bool clockwise: whether to turn clockwise or anticlockwise
    */
-  Serial.println("Setting right motor velocity");
+  //**Serial.println("Setting right motor velocity");
 
   if (speed == 0) {
     analogWrite(pwm_pin_r, 0);
@@ -338,28 +338,52 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 
 
 void loop() {
-  Serial.println("Running loop()");
+  //**Serial.println("Running loop()");
 
   if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
     readAccelData(accelCount);
     getAres();
-
     // Calculate acceleration values in Gs
-    ax = (float)accelCount[0]*aRes; // - accelBias[0];  // get actual g value, this depends on scale being set
-    ay = (float)accelCount[1]*aRes; // - accelBias[1];   
-    az = (float)accelCount[2]*aRes; // - accelBias[2];  
+    ax = static_cast<float>(accelCount[0]) * aRes; // - accelBias[0];  // get actual g value, this depends on scale being set
+    ay = static_cast<float>(accelCount[1]) * aRes; // - accelBias[1];
+    az = static_cast<float>(accelCount[2]) * aRes; // - accelBias[2];
+    //**Serial.print("MPU9255 accelerometer reading (mg): x=");
+    //**Serial.print(static_cast<int>(1000*ax));
+    //**Serial.print(" y=");
+    //**Serial.print(static_cast<int>(1000*ay));
+    //**Serial.print(" z=");
+    //**Serial.print(static_cast<int>(1000*az));
+    //**Serial.println(" ");
 
-    Serial.print("MPU9255 accelerometer reading (mg): x=");
-    Serial.print((int)(1000*ax));
-    Serial.print(" y=");
-    Serial.print((int)(1000*ay));
-    Serial.print(" z=");
-    Serial.print((int)(1000*az));
+    readGyroData(gyroCount);
+    getGres();
+    // Calculate gyro values in °/s
+    gx = static_cast<float>(gyroCount[0]) * gRes;
+    gy = static_cast<float>(gyroCount[1]) * gRes;
+    gz = static_cast<float>(gyroCount[2]) * gRes;
+    //**Serial.print("MPU9255 gyrometer reading (°/s): x=");
+    //**Serial.print(static_cast<int>(gx));
+    //**Serial.print(" y=");
+    //**Serial.print(static_cast<int>(gy));
+    //**Serial.print(" z=");
+    //**Serial.print(static_cast<int>(gz));
+    //**Serial.println(" ");
+
+    Serial.print(static_cast<int>(1000*ax));
+    Serial.print(",");
+    Serial.print(static_cast<int>(1000*ay));
+    Serial.print(",");
+    Serial.print(static_cast<int>(1000*az));
+    // Serial.print(",");
+    // Serial.print(static_cast<int>(gx));
+    // Serial.print(",");
+    // Serial.print(static_cast<int>(gy));
+    // Serial.print(",");
+    // Serial.print(static_cast<int>(gz));
     Serial.println(" ");
-
   
   }
-  delay(5000);
+  delay(100);
 }
 
 
@@ -716,13 +740,13 @@ void calibrateMPU9250(float * dest1, float * dest2)
 
    
 // Accelerometer and gyroscope self test; check calibration wrt factory settings
-void MPU9250SelfTest(float * destination) // Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
-{
-   uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
-   uint8_t selfTest[6];
-   int32_t gAvg[3] = {0}, aAvg[3] = {0}, aSTAvg[3] = {0}, gSTAvg[3] = {0};
-   float factoryTrim[6];
-   uint8_t FS = 0;
+// Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+void MPU9250SelfTest(float * destination) {
+  uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
+  uint8_t selfTest[6];
+  int32_t gAvg[3] = {0}, aAvg[3] = {0}, aSTAvg[3] = {0}, gSTAvg[3] = {0};
+  float factoryTrim[6];
+  uint8_t FS = 0;
    
   writeByte(MPU9250_ADDRESS, SMPLRT_DIV, 0x00);    // Set gyro sample rate to 1 kHz
   writeByte(MPU9250_ADDRESS, CONFIG, 0x02);        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
@@ -731,21 +755,21 @@ void MPU9250SelfTest(float * destination) // Should return percent deviation fro
   writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, FS<<3); // Set full scale range for the accelerometer to 2 g
 
   for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer
-  
-  readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);        // Read the six raw data registers into data array
-  aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-  aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-  aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
-  
-    readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);       // Read the six raw data registers sequentially into data array
-  gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-  gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-  gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+
+    readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);        // Read the six raw data registers into data array
+    aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+    aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
+    aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+
+    readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);         // Read the six raw data registers sequentially into data array
+    gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
+    gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
+    gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
   }
   
   for (int ii =0; ii < 3; ii++) {  // Get average of 200 values and store as average current readings
-  aAvg[ii] /= 200;
-  gAvg[ii] /= 200;
+    aAvg[ii] /= 200;
+    gAvg[ii] /= 200;
   }
   
 // Configure the accelerometer for self-test
