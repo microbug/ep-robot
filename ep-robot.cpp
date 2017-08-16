@@ -190,9 +190,11 @@ enum Mscale {
 // Specify sensor full scale
 uint8_t Gscale = GFS_250DPS;
 uint8_t Ascale = AFS_2G;
-uint8_t Mscale = MFS_16BITS; // Choose either 14-bit or 16-bit magnetometer resolution
-uint8_t Mmode = 0x02;        // 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
-float aRes, gRes, mRes;      // scale resolutions per LSB for the sensors
+// Choose either 14-bit or 16-bit magnetometer resolution
+uint8_t Mscale = MFS_16BITS;
+// 2 for 8 Hz, 6 for 100 Hz continuous magnetometer data read
+uint8_t Mmode = 0x02;
+float aRes, gRes, mRes;  // scale resolutions per LSB for the sensors
 
 float SelfTest[6];  // Holds results of gyro and accelerometer self test
 float gyroBias[3] = {0, 0, 0};
@@ -266,11 +268,11 @@ void setup() {
 
     calibrateMPU9250(gyroBias, accelBias);
     Serial.print("MPU9255 accelerometer bias (mg): x=");
-    Serial.print((int)(1000*accelBias[0]));
+    Serial.print(static_cast<int>(1000*accelBias[0]));
     Serial.print(" y=");
-    Serial.print((int)(1000*accelBias[1]));
+    Serial.print(static_cast<int>(1000*accelBias[1]));
     Serial.print(" z=");
-    Serial.print((int)(1000*accelBias[2]));
+    Serial.print(static_cast<int>(1000*accelBias[2]));
     Serial.println(" ");
     Serial.print("MPU9255 gyrometer bias (deg/s): x=");
     Serial.print(gyroBias[0], 1);
@@ -340,7 +342,8 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 void loop() {
     Serial.println("Running loop()");
 
-    if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {  // If MPU9255 ready bit is set
+    // If MPU9255 ready bit is set
+    if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
         readAccelData(accelCount);
         getAres();
         // Calculate acceleration values in Gs
@@ -485,12 +488,12 @@ void readGyroData(int16_t * destination) {
 }
 
 void readMagData(int16_t * destination) {
-    // xyz mag register data, ST2 register stored here, must read ST2 at end of data acquisition
+    // xyz mag register data, ST2 register stored here, must read ST2 at end of
+    // data acquisition
     uint8_t rawData[7];
 
     // If magnetometer ready bit is set
     if (readByte(AK8963_ADDRESS, AK8963_ST1) & 0x01) {
-
         // Read the six raw data and ST2 registers sequentially into rawData
         readBytes(AK8963_ADDRESS, AK8963_XOUT_L, 7, &rawData[0]);
 
@@ -580,11 +583,12 @@ void initMPU9250() {
     // left-shifted into positions 4:3
 
     uint8_t c = readByte(MPU9250_ADDRESS, GYRO_CONFIG);
-    // c = c & ~0xE0; // Clear self-test bits [7:5] 
-    c = c & ~0x03; // Clear Fchoice bits [1:0] 
-    c = c & ~0x18; // Clear GFS bits [4:3]
-    c = c | Gscale << 3; // Set full scale range for the gyro
-    // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of GYRO_CONFIG
+    // c = c & ~0xE0; // Clear self-test bits [7:5]
+    c = c & ~0x03;  // Clear Fchoice bits [1:0]
+    c = c & ~0x18;  // Clear GFS bits [4:3]
+    c = c | Gscale << 3;  // Set full scale range for the gyro
+    // Set Fchoice for the gyro to 11 by writing its inverse to bits 1:0 of
+    // GYRO_CONFIG
     // c =| 0x00;
     writeByte(MPU9250_ADDRESS, GYRO_CONFIG, c);
 
@@ -762,37 +766,51 @@ void calibrateMPU9250(float * dest1, float * dest2) {
     // Accelerometer bias registers expect bias input as 2048 LSB per g, so that
     // the accelerometer biases calculated above must be divided by 8.
 
-    int32_t accel_bias_reg[3] = {0, 0, 0}; // A place to hold the factory accelerometer trim biases
-    readBytes(MPU9250_ADDRESS, XA_OFFSET_H, 2, &data[0]); // Read factory accelerometer trim values
+    // Holds the factory accelerometer trim biases
+    int32_t accel_bias_reg[3] = {0, 0, 0};
+
+    // Read factory accelerometer trim values
+    readBytes(MPU9250_ADDRESS, XA_OFFSET_H, 2, &data[0]);
     accel_bias_reg[0] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
     readBytes(MPU9250_ADDRESS, YA_OFFSET_H, 2, &data[0]);
     accel_bias_reg[1] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
     readBytes(MPU9250_ADDRESS, ZA_OFFSET_H, 2, &data[0]);
     accel_bias_reg[2] = (int32_t) (((int16_t)data[0] << 8) | data[1]);
 
-    uint32_t mask = 1uL; // Define mask for temperature compensation bit 0 of lower byte of accelerometer bias registers
-    uint8_t mask_bit[3] = {0, 0, 0}; // Define array to hold mask bit for each accelerometer bias axis
+    // Define mask for temperature compensation bit 0 of lower byte of
+    // accelerometer bias registers
+    uint32_t mask = 1uL;
+    // Define array to hold mask bit for each accelerometer bias axis
+    uint8_t mask_bit[3] = {0, 0, 0};
 
-    for(ii = 0; ii < 3; ii++) {
-    if((accel_bias_reg[ii] & mask)) mask_bit[ii] = 0x01; // If temperature compensation bit is set, record that fact in mask_bit
+    for (ii = 0; ii < 3; ii++) {
+        if ((accel_bias_reg[ii] & mask)) {
+            // If temperature compensation bit is set, set mask_bit to 1
+            mask_bit[ii] = 0x01;
+        }
     }
 
-    // Construct total accelerometer bias, including calculated average accelerometer bias from above
-    accel_bias_reg[0] -= (accel_bias[0]/8); // Subtract calculated averaged accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+    // Construct total accelerometer bias, including calculated average
+    // accelerometer bias from above. Subtract calculated averaged
+    // accelerometer bias scaled to 2048 LSB/g (16 g full scale)
+    accel_bias_reg[0] -= (accel_bias[0]/8);
     accel_bias_reg[1] -= (accel_bias[1]/8);
     accel_bias_reg[2] -= (accel_bias[2]/8);
 
     data[0] = (accel_bias_reg[0] >> 8) & 0xFF;
     data[1] = (accel_bias_reg[0])      & 0xFF;
-    data[1] = data[1] | mask_bit[0]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    // Preserve temperature compensation bit when writing back to accelerometer
+    // bias registers
+    data[1] = data[1] | mask_bit[0];
     data[2] = (accel_bias_reg[1] >> 8) & 0xFF;
     data[3] = (accel_bias_reg[1])      & 0xFF;
-    data[3] = data[3] | mask_bit[1]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    data[3] = data[3] | mask_bit[1];
     data[4] = (accel_bias_reg[2] >> 8) & 0xFF;
     data[5] = (accel_bias_reg[2])      & 0xFF;
-    data[5] = data[5] | mask_bit[2]; // preserve temperature compensation bit when writing back to accelerometer bias registers
+    data[5] = data[5] | mask_bit[2];
 
-    // Apparently this is not working for the acceleration biases in the MPU-9250
+    // Apparently this is not working for the acceleration biases in the
+    // MPU-9250
     // Are we handling the temperature correction bit properly?
     // Push accelerometer biases to hardware registers
     writeByte(MPU9250_ADDRESS, XA_OFFSET_H, data[0]);
@@ -803,127 +821,176 @@ void calibrateMPU9250(float * dest1, float * dest2) {
     writeByte(MPU9250_ADDRESS, ZA_OFFSET_L, data[5]);
 
     // Output scaled accelerometer biases for display in the main program
-    dest2[0] = (float)accel_bias[0]/(float)accelsensitivity; 
-    dest2[1] = (float)accel_bias[1]/(float)accelsensitivity;
-    dest2[2] = (float)accel_bias[2]/(float)accelsensitivity;
+    dest2[0] = static_cast<float>(accel_bias[0]) / \
+        static_cast<float>(accelsensitivity);
+    dest2[1] = static_cast<float>(accel_bias[1]) / \
+        static_cast<float>(accelsensitivity);
+    dest2[2] = static_cast<float>(accel_bias[2]) / \
+        static_cast<float>(accelsensitivity);
 }
 
-     
+
 // Accelerometer and gyroscope self test; check calibration wrt factory settings
-// Should return percent deviation from factory trim values, +/- 14 or less deviation is a pass
+// Should return percent deviation from factory trim values, ±14% or less
+// is a pass
 void MPU9250SelfTest(float * destination) {
     uint8_t rawData[6] = {0, 0, 0, 0, 0, 0};
     uint8_t selfTest[6];
     int32_t gAvg[3] = {0}, aAvg[3] = {0}, aSTAvg[3] = {0}, gSTAvg[3] = {0};
     float factoryTrim[6];
     uint8_t FS = 0;
-     
-    writeByte(MPU9250_ADDRESS, SMPLRT_DIV, 0x00);    // Set gyro sample rate to 1 kHz
-    writeByte(MPU9250_ADDRESS, CONFIG, 0x02);        // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
-    writeByte(MPU9250_ADDRESS, GYRO_CONFIG, FS<<3);  // Set full scale range for the gyro to 250 dps
-    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, 0x02); // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
-    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, FS<<3); // Set full scale range for the accelerometer to 2 g
 
-    for( int ii = 0; ii < 200; ii++) {  // get average current values of gyro and acclerometer
+    // Set gyro sample rate to 1 kHz
+    writeByte(MPU9250_ADDRESS, SMPLRT_DIV, 0x00);
+    // Set gyro sample rate to 1 kHz and DLPF to 92 Hz
+    writeByte(MPU9250_ADDRESS, CONFIG, 0x02);
+    // Set full scale range for the gyro to 250 dps
+    writeByte(MPU9250_ADDRESS, GYRO_CONFIG, FS << 3);
+    // Set accelerometer rate to 1 kHz and bandwidth to 92 Hz
+    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG2, 0x02);
+    // Set full scale range for the accelerometer to 2 g
+    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, FS << 3);
 
-        readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);        // Read the six raw data registers into data array
-        aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-        aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-        aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+    // get average current values of gyro and acclerometer
+    for (int ii = 0; ii < 200; ii++) {
+        // Read the six raw data registers into rawData
+        readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);
+        // Turn the MSB and LSB into a signed 16-bit value
+        aAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
+        aAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
+        aAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
 
-        readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);         // Read the six raw data registers sequentially into data array
-        gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-        gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-        gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+        readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);
+        gAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
+        gAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
+        gAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
     }
-    
-    for (int ii =0; ii < 3; ii++) {  // Get average of 200 values and store as average current readings
+
+    // Get average of 200 values and store as average current readings
+    for (int ii =0; ii < 3; ii++) {
         aAvg[ii] /= 200;
         gAvg[ii] /= 200;
     }
-    
-// Configure the accelerometer for self-test
-     writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, 0xE0); // Enable self test on all three axes and set accelerometer range to +/- 2 g
-     writeByte(MPU9250_ADDRESS, GYRO_CONFIG,  0xE0); // Enable self test on all three axes and set gyro range to +/- 250 degrees/s
-     delay(25);  // Delay a while to let the device stabilize
 
-    for( int ii = 0; ii < 200; ii++) {  // get average self-test values of gyro and acclerometer
-    
-    readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers into data array
-    aSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-    aSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-    aSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
-    
-        readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);  // Read the six raw data registers sequentially into data array
-    gSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]) ;  // Turn the MSB and LSB into a signed 16-bit value
-    gSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]) ;  
-    gSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]) ; 
+    // Configure the accelerometer for self-test
+    // Enable self test on all three axes and set accelerometer range to +/- 2 g
+    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, 0xE0);
+    // Enable self test on all three axes and set gyro range to +/- 250 degrees/s
+    writeByte(MPU9250_ADDRESS, GYRO_CONFIG,  0xE0);
+    delay(25);  // Delay a while to let the device stabilize
+
+    // get average self-test values of gyro and acclerometer
+    for (int ii = 0; ii < 200; ii++) {
+        // Read the six raw data registers into rawData
+        readBytes(MPU9250_ADDRESS, ACCEL_XOUT_H, 6, &rawData[0]);
+        // Turn the MSB and LSB into a signed 16-bit value
+        aSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
+        aSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
+        aSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
+
+        readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);
+        gSTAvg[0] += (int16_t)(((int16_t)rawData[0] << 8) | rawData[1]);
+        gSTAvg[1] += (int16_t)(((int16_t)rawData[2] << 8) | rawData[3]);
+        gSTAvg[2] += (int16_t)(((int16_t)rawData[4] << 8) | rawData[5]);
     }
-    
-    for (int ii =0; ii < 3; ii++) {  // Get average of 200 values and store as average self-test readings
-    aSTAvg[ii] /= 200;
-    gSTAvg[ii] /= 200;
-    }   
-    
- // Configure the gyro and accelerometer for normal operation
-     writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, 0x00);  
-     writeByte(MPU9250_ADDRESS, GYRO_CONFIG,  0x00);  
-     delay(25);  // Delay a while to let the device stabilize
-     
-     // Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
-     selfTest[0] = readByte(MPU9250_ADDRESS, SELF_TEST_X_ACCEL); // X-axis accel self-test results
-     selfTest[1] = readByte(MPU9250_ADDRESS, SELF_TEST_Y_ACCEL); // Y-axis accel self-test results
-     selfTest[2] = readByte(MPU9250_ADDRESS, SELF_TEST_Z_ACCEL); // Z-axis accel self-test results
-     selfTest[3] = readByte(MPU9250_ADDRESS, SELF_TEST_X_GYRO);  // X-axis gyro self-test results
-     selfTest[4] = readByte(MPU9250_ADDRESS, SELF_TEST_Y_GYRO);  // Y-axis gyro self-test results
-     selfTest[5] = readByte(MPU9250_ADDRESS, SELF_TEST_Z_GYRO);  // Z-axis gyro self-test results
+
+    // Get average of 200 values and store as average self-test readings
+    for (int ii =0; ii < 3; ii++) {
+        aSTAvg[ii] /= 200;
+        gSTAvg[ii] /= 200;
+    }
+
+    // Configure the gyro and accelerometer for normal operation
+    writeByte(MPU9250_ADDRESS, ACCEL_CONFIG, 0x00);
+    writeByte(MPU9250_ADDRESS, GYRO_CONFIG,  0x00);
+    delay(25);  // Delay a while to let the device stabilize
+
+    // Retrieve accelerometer and gyro factory Self-Test Code from USR_Reg
+    selfTest[0] = readByte(MPU9250_ADDRESS, SELF_TEST_X_ACCEL); // X-axis accel self-test results
+    selfTest[1] = readByte(MPU9250_ADDRESS, SELF_TEST_Y_ACCEL); // Y-axis accel self-test results
+    selfTest[2] = readByte(MPU9250_ADDRESS, SELF_TEST_Z_ACCEL); // Z-axis accel self-test results
+    selfTest[3] = readByte(MPU9250_ADDRESS, SELF_TEST_X_GYRO);  // X-axis gyro self-test results
+    selfTest[4] = readByte(MPU9250_ADDRESS, SELF_TEST_Y_GYRO);  // Y-axis gyro self-test results
+    selfTest[5] = readByte(MPU9250_ADDRESS, SELF_TEST_Z_GYRO);  // Z-axis gyro self-test results
+
 
     // Retrieve factory self-test value from self-test code reads
-     factoryTrim[0] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[0] - 1.0) )); // FT[Xa] factory trim calculation
-     factoryTrim[1] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[1] - 1.0) )); // FT[Ya] factory trim calculation
-     factoryTrim[2] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[2] - 1.0) )); // FT[Za] factory trim calculation
-     factoryTrim[3] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[3] - 1.0) )); // FT[Xg] factory trim calculation
-     factoryTrim[4] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[4] - 1.0) )); // FT[Yg] factory trim calculation
-     factoryTrim[5] = (float)(2620/1<<FS)*(pow( 1.01 , ((float)selfTest[5] - 1.0) )); // FT[Zg] factory trim calculation
- 
- // Report results as a ratio of (STR - FT)/FT; the change from Factory Trim of the Self-Test Response
- // To get percent, must multiply by 100
+
+    // FT[Xa] factory trim calculation
+    factoryTrim[0] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[0]) - 1.0));
+
+    // FT[Ya] factory trim calculation
+    factoryTrim[1] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[1]) - 1.0));
+
+    // FT[Za] factory trim calculation
+    factoryTrim[2] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[2]) - 1.0) );
+
+    // FT[Xg] factory trim calculation
+    factoryTrim[3] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[3]) - 1.0));
+
+    // FT[Yg] factory trim calculation
+    factoryTrim[4] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[4]) - 1.0));
+
+    // FT[Zg] factory trim calculation
+    factoryTrim[5] = static_cast<float>(2620/1 << FS) * \
+        pow(1.01, (static_cast<float>(selfTest[5]) - 1.0));
+
+    // Report results as a ratio of (STR - FT)/FT; the change from Factory Trim
+    // of the Self-Test Response. To get percent, must multiply by 100
      for (int i = 0; i < 3; i++) {
-         destination[i]   = 100.0*((float)(aSTAvg[i] - aAvg[i]))/factoryTrim[i] - 100.;   // Report percent differences
-         destination[i+3] = 100.0*((float)(gSTAvg[i] - gAvg[i]))/factoryTrim[i+3] - 100.; // Report percent differences
+        // accelerometer
+        destination[i]   = 100.0*(static_cast<float>(aSTAvg[i] - aAvg[i])) / \
+            factoryTrim[i] - 100.;
+        // gyrometer
+        destination[i+3] = 100.0*(static_cast<float>(gSTAvg[i] - gAvg[i])) / \
+            factoryTrim[i+3] - 100.;
      }
-     
 }
 
-                
+
 // Wire.h read and write protocols
-void writeByte(uint8_t address, uint8_t subAddress, uint8_t data)
-{
+void writeByte(uint8_t address, uint8_t subAddress, uint8_t data) {
     Wire.beginTransmission(address);  // Initialize the Tx buffer
     Wire.write(subAddress);           // Put slave register address in Tx buffer
     Wire.write(data);                 // Put data in Tx buffer
     Wire.endTransmission();           // Send the Tx buffer
 }
 
-uint8_t readByte(uint8_t address, uint8_t subAddress)
-{
-    uint8_t data; // `data` will store the register data   
-    Wire.beginTransmission(address);         // Initialize the Tx buffer
-    Wire.write(subAddress);                  // Put slave register address in Tx buffer
-    Wire.endTransmission(false);             // Send the Tx buffer, but send a restart to keep connection alive
-    Wire.requestFrom(address, (uint8_t) 1);  // Read one byte from slave register address 
-    data = Wire.read();                      // Fill Rx buffer with result
-    return data;                             // Return data read from slave register
+uint8_t readByte(uint8_t address, uint8_t subAddress) {
+    uint8_t data;
+    // Initialize the Tx buffer
+    Wire.beginTransmission(address);
+    // Put slave register address in Tx buffer
+    Wire.write(subAddress);
+    // Send the Tx buffer, but send a restart to keep connection alive
+    Wire.endTransmission(false);
+    // Read one byte from slave register address
+    Wire.requestFrom(address, (uint8_t) 1);
+    // Fill Rx buffer with result
+    data = Wire.read();
+    return data;
 }
 
-void readBytes(uint8_t address, uint8_t subAddress, uint8_t count, uint8_t * dest) {  
-    Wire.beginTransmission(address);   // Initialize the Tx buffer
-    Wire.write(subAddress);            // Put slave register address in Tx buffer
-    Wire.endTransmission(false);       // Send the Tx buffer, but send a restart to keep connection alive
+void readBytes(uint8_t address, uint8_t subAddress, uint8_t count,
+               uint8_t * dest) {
+    // Initialize the Tx buffer
+    Wire.beginTransmission(address);
+    // Put slave register address in Tx buffer
+    Wire.write(subAddress);
+    // Send the Tx buffer, but send a restart to keep connection alive
+    Wire.endTransmission(false);
     uint8_t i = 0;
-                Wire.requestFrom(address, count);  // Read bytes from slave register address 
+    // Read bytes from slave register address
+    Wire.requestFrom(address, count);
+    // Put read results in the Rx buffer
     while (Wire.available()) {
-                dest[i++] = Wire.read(); }         // Put read results in the Rx buffer
+        dest[i++] = Wire.read();
+    }
 }
 
 
