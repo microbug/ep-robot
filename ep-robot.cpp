@@ -22,6 +22,8 @@ int pwm_pin_r = 7;
 #include <SPI.h>
 #include <Wire.h>
 
+#define PRINT_MOTOR_VELOCITY false
+
 // Magnetometer Registers
 #define AK8963_ADDRESS   0x0C
 #define AK8963_WHO_AM_I  0x00  // should return 0x48
@@ -230,14 +232,23 @@ void setup() {
 
     // Run self test on motors
     Serial.println("\r\nRunning motor test");
-    left_motor_set_velocity(255, true);
-    right_motor_set_velocity(255, false);
-    delay(1000);
-    left_motor_set_velocity(255, false);
-    right_motor_set_velocity(255, true);
-    delay(1000);
-    left_motor_set_velocity(0, false);
-    right_motor_set_velocity(0, false);
+    // left_motor_set_velocity(255, true);
+    // right_motor_set_velocity(255, false);
+    // delay(1000);
+    // left_motor_set_velocity(255, false);
+    // right_motor_set_velocity(255, true);
+    // delay(1000);
+    // left_motor_set_velocity(0, false);
+    // right_motor_set_velocity(0, false);
+    int i;
+    for (i = 0; i < 256; i++) {
+        left_motor_set_velocity(i, true);
+        right_motor_set_velocity(i, false);
+        delay(10);
+    }
+    delay(500);
+    left_motor_set_velocity(0, true);
+    right_motor_set_velocity(0, true);
     Serial.println("Completed motor test");
 
     Serial.println("\r\nBeginning IMU tests");
@@ -298,7 +309,9 @@ void left_motor_set_velocity(unsigned int speed, bool clockwise) {
      * int speed: speed from 0 to 255
      * bool clockwise: whether to turn clockwise or anticlockwise
      */
-    Serial.println("Setting left motor velocity");
+    #if PRINT_MOTOR_VELOCITY
+        Serial.println("Setting left motor velocity");
+    #endif
 
     if (speed == 0) {
         analogWrite(pwm_pin_l, 0);
@@ -321,7 +334,9 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
      * int speed: speed from 0 to 255
      * bool clockwise: whether to turn clockwise or anticlockwise
      */
-    Serial.println("Setting right motor velocity");
+    #if PRINT_MOTOR_VELOCITY
+        Serial.println("Setting right motor velocity");
+    #endif
 
     if (speed == 0) {
         analogWrite(pwm_pin_r, 0);
@@ -347,16 +362,16 @@ void loop() {
         readAccelData(accelCount);
         getAres();
         // Calculate acceleration values in Gs
-        ax = (static_cast<float>(accelCount[0]) * aRes) - accelBias[0];
-        ay = (static_cast<float>(accelCount[1]) * aRes) - accelBias[1];
-        az = (static_cast<float>(accelCount[2]) * aRes) - accelBias[2];
-        Serial.print("MPU9255 accelerometer reading (mg): x=");
+        ax = (static_cast<float>(accelCount[0]) * aRes);
+        ay = (static_cast<float>(accelCount[1]) * aRes);
+        az = (static_cast<float>(accelCount[2]) * aRes);
+        Serial.print("MPU9255 accelerometer reading): x=");
         Serial.print(static_cast<int>(1000*ax));
-        Serial.print(" y=");
+        Serial.print("mg y=");
         Serial.print(static_cast<int>(1000*ay));
-        Serial.print(" z=");
+        Serial.print("mg z=");
         Serial.print(static_cast<int>(1000*az));
-        Serial.println(" ");
+        Serial.println("mg");
 
         readGyroData(gyroCount);
         getGres();
@@ -372,6 +387,7 @@ void loop() {
         Serial.print(static_cast<int>(gz));
         Serial.println(" ");
     }
+
     delay(500);
 }
 
