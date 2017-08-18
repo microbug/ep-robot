@@ -161,6 +161,7 @@ int pwm_pin_r = 7;
 #define ZA_OFFSET_L      0x7E
 
 // Seven-bit device address is 110100 for ADO = 0 and 110101 for ADO = 1
+// Define AD0 to be 0 if tied to GND, 1 if tied to VCC (3.3V)
 #define ADO 0
 #if ADO
     #define MPU9250_ADDRESS 0x69  // Device address when ADO = 1
@@ -226,12 +227,15 @@ void setup() {
     LCD.setCursor(0, 1);
     LCD.print("QRSTUVWXYZ123456");
     delay(1000);
+    Serial.println("LCD test complete");
     LCD.clear();
     LCD.print("Initialising...");
-    Serial.println("LCD test complete");
 
     // Run self test on motors
     Serial.println("\r\nRunning motor test");
+    LCD.setCursor(0, 1);
+    // Must print 16 characters to clear any previous text
+    LCD.print("Testing motors  ");
     // left_motor_set_velocity(255, true);
     // right_motor_set_velocity(255, false);
     // delay(1000);
@@ -252,16 +256,22 @@ void setup() {
     Serial.println("Completed motor test");
 
     Serial.println("\r\nBeginning IMU tests");
+    LCD.setCursor(0, 1);
+    LCD.print("Testing IMU:addr");
     byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
     Serial.print("MPU9255 has address "); Serial.println(c, HEX);
     Serial.print("MPU9255 should have address "); Serial.println(0x73, HEX);
     if (c != 0x73) {
         Serial.println("ERROR: MPU9255 did not have expected address");
+        LCD.setCursor(0, 1);
+        LCD.print("ERR MPU9255 ADDR");
         while (1) {}
     }
 
     // Run self test and calibration on IMU and report results
     Serial.println("Running IMU internal self test");
+    LCD.setCursor(0, 1);
+    LCD.print("Testing IMU:self");
     MPU9250SelfTest(SelfTest);
     Serial.print("x-axis self test: acceleration trim within : ");
     Serial.print(SelfTest[0], 1); Serial.println("% of factory value");
@@ -275,8 +285,11 @@ void setup() {
     Serial.print(SelfTest[4], 1); Serial.println("% of factory value");
     Serial.print("z-axis self test: gyration trim within : ");
     Serial.print(SelfTest[5], 1); Serial.println("% of factory value");
-    Serial.println("Completed IMU internal self test, running IMU calibration");
+    Serial.println("Completed IMU internal self test");
 
+    Serial.println("Running IMU calibration");
+    LCD.setCursor(0, 1);
+    LCD.print("Calibrating IMU ");
     calibrateMPU9250(gyroBias, accelBias);
     Serial.print("MPU9255 accelerometer bias (mg): x=");
     Serial.print(static_cast<int>(1000*accelBias[0]));
@@ -295,6 +308,8 @@ void setup() {
 
 
     Serial.println("Calibrated IMU, beginning IMU initialisation");
+    LCD.setCursor(0, 1);
+    LCD.print("Initialising IMU");
     initMPU9250();
     Serial.println("Completed IMU initialisation");
 
@@ -379,13 +394,13 @@ void loop() {
         gx = (static_cast<float>(gyroCount[0]) * gRes);
         gy = (static_cast<float>(gyroCount[1]) * gRes);
         gz = (static_cast<float>(gyroCount[2]) * gRes);
-        Serial.print("MPU9255 gyrometer reading (°/s): x=");
+        Serial.print("MPU9255 gyrometer reading: x=");
         Serial.print(static_cast<int>(gx));
-        Serial.print(" y=");
+        Serial.print("°/s y=");
         Serial.print(static_cast<int>(gy));
-        Serial.print(" z=");
+        Serial.print("°/s z=");
         Serial.print(static_cast<int>(gz));
-        Serial.println(" ");
+        Serial.println("°/s");
     }
 
     delay(500);
