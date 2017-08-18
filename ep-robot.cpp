@@ -18,6 +18,21 @@ int dir1_pin_r = 5;
 int dir2_pin_r = 6;
 int pwm_pin_r = 7;
 
+// Define button pins
+int button_pin_1 = 35;
+int button_pin_2 = 37;
+
+
+// Define complementary filter variables
+float angle = 0;
+float filter_constant_a = 0.9800;
+float filter_constant_b = 1.0 - filter_constant_a;
+float filter_dt = 0.50;
+
+// If this is 0, motors will not be tested
+#define TEST_MOTORS 0
+
+
 // For MPU9255
 #include <SPI.h>
 #include <Wire.h>
@@ -231,29 +246,31 @@ void setup() {
     LCD.clear();
     LCD.print("Initialising...");
 
-    // Run self test on motors
-    Serial.println("\r\nRunning motor test");
-    LCD.setCursor(0, 1);
-    // Must print 16 characters to clear any previous text
-    LCD.print("Testing motors  ");
-    // left_motor_set_velocity(255, true);
-    // right_motor_set_velocity(255, false);
-    // delay(1000);
-    // left_motor_set_velocity(255, false);
-    // right_motor_set_velocity(255, true);
-    // delay(1000);
-    // left_motor_set_velocity(0, false);
-    // right_motor_set_velocity(0, false);
-    int i;
-    for (i = 0; i < 256; i++) {
-        left_motor_set_velocity(i, true);
-        right_motor_set_velocity(i, false);
-        delay(10);
-    }
-    delay(500);
-    left_motor_set_velocity(0, true);
-    right_motor_set_velocity(0, true);
-    Serial.println("Completed motor test");
+    #if TEST_MOTORS
+        // Run self test on motors
+        Serial.println("\r\nRunning motor test");
+        LCD.setCursor(0, 1);
+        // Must print 16 characters to clear any previous text
+        LCD.print("Testing motors  ");
+        // left_motor_set_velocity(255, true);
+        // right_motor_set_velocity(255, false);
+        // delay(1000);
+        // left_motor_set_velocity(255, false);
+        // right_motor_set_velocity(255, true);
+        // delay(1000);
+        // left_motor_set_velocity(0, false);
+        // right_motor_set_velocity(0, false);
+        int i;
+        for (i = 0; i < 256; i++) {
+            left_motor_set_velocity(i, true);
+            right_motor_set_velocity(i, false);
+            delay(10);
+        }
+        delay(500);
+        left_motor_set_velocity(0, true);
+        right_motor_set_velocity(0, true);
+        Serial.println("Completed motor test");
+    #endif
 
     Serial.println("\r\nBeginning IMU tests");
     LCD.setCursor(0, 1);
@@ -313,9 +330,92 @@ void setup() {
     initMPU9250();
     Serial.println("Completed IMU initialisation");
 
+    Serial.print("\r\nfilter_constant_a=");
+    Serial.println(filter_constant_a);
+    Serial.print("filter_constant_b=");
+    Serial.println(filter_constant_b);
+
+    Serial.println("Waiting for button press");
+    LCD.setCursor(0, 1);
+    LCD.print("Press button... ");
+
+    // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
+    // resistor. When button is pressed, button_pin_2 is pulled low.
+    pinMode(button_pin_1, OUTPUT);
+    digitalWrite(button_pin_1, LOW);
+
+    pinMode(button_pin_2, INPUT_PULLUP);
+    delay(20);
+    bool button_pressed = false;
+
+    // Debounce: check if button is depressed twice in 50ms
+    while (button_pressed == false) {
+        if (digitalRead(button_pin_2) == LOW) {
+            delay(50);
+            if (digitalRead(button_pin_2) == LOW) {
+                button_pressed = true;
+            }
+        }
+        delay(10);
+    }
+
+
+
     LCD.clear();
     LCD.print("Ready");
     Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
+}
+
+
+void loop() {
+    Serial.println("Running loop()");
+
+    while (1) {
+        // If MPU9255 ready bit is set
+        if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
+            break;
+        } else {
+            Serial.println("Warning: couldn't get MPU9250 data, retrying");
+        }
+    }
+
+    readAccelData(accelCount);
+    getAres();
+    // Calculate acceleration values in Gs
+    ax = (static_cast<float>(accelCount[0]) * aRes);
+    ay = (static_cast<float>(accelCount[1]) * aRes);
+    az = (static_cast<float>(accelCount[2]) * aRes);
+    Serial.print("MPU9255 accelerometer reading: x=");
+    Serial.print(ax);
+    Serial.print("g y=");
+    Serial.print(ay);
+    Serial.print("g z=");
+    Serial.print(az);
+    Serial.println("g");
+
+    readGyroData(gyroCount);
+    getGres();
+    // Calculate gyro values in °/s
+    gx = (static_cast<float>(gyroCount[0]) * gRes);
+    gy = (static_cast<float>(gyroCount[1]) * gRes);
+    gz = (static_cast<float>(gyroCount[2]) * gRes);
+    Serial.print("MPU9255 gyrometer reading: x=");
+    Serial.print(gx);
+    Serial.print("°/s y=");
+    Serial.print(gy);
+    Serial.print("°/s z=");
+    Serial.print(gz);
+    Serial.println("°/s");
+
+    // Update angle using complementary filter
+    angle = filter_constant_a*(angle + gy*filter_dt) + filter_constant_b*ax;
+
+    Serial.print("Angle: ");
+    Serial.print(angle);
+    Serial.print("\n");
+
+    // Tune this to adjust feedback loop speed
+    delay(100);
 }
 
 
@@ -367,46 +467,6 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
         digitalWrite(dir2_pin_r, LOW);
     }
 }
-
-
-void loop() {
-    Serial.println("Running loop()");
-
-    // If MPU9255 ready bit is set
-    if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
-        readAccelData(accelCount);
-        getAres();
-        // Calculate acceleration values in Gs
-        ax = (static_cast<float>(accelCount[0]) * aRes);
-        ay = (static_cast<float>(accelCount[1]) * aRes);
-        az = (static_cast<float>(accelCount[2]) * aRes);
-        Serial.print("MPU9255 accelerometer reading): x=");
-        Serial.print(static_cast<int>(1000*ax));
-        Serial.print("mg y=");
-        Serial.print(static_cast<int>(1000*ay));
-        Serial.print("mg z=");
-        Serial.print(static_cast<int>(1000*az));
-        Serial.println("mg");
-
-        readGyroData(gyroCount);
-        getGres();
-        // Calculate gyro values in °/s
-        gx = (static_cast<float>(gyroCount[0]) * gRes);
-        gy = (static_cast<float>(gyroCount[1]) * gRes);
-        gz = (static_cast<float>(gyroCount[2]) * gRes);
-        Serial.print("MPU9255 gyrometer reading: x=");
-        Serial.print(static_cast<int>(gx));
-        Serial.print("°/s y=");
-        Serial.print(static_cast<int>(gy));
-        Serial.print("°/s z=");
-        Serial.print(static_cast<int>(gz));
-        Serial.println("°/s");
-    }
-
-    delay(500);
-}
-
-
 
 
 
@@ -509,7 +569,7 @@ void readGyroData(int16_t * destination) {
     // xyz gyro register data stored here
     uint8_t rawData[6];
 
-    // Read the six raw data registers sequentially into data array
+    // Read the six raw data registers sequentially into rawData
     readBytes(MPU9250_ADDRESS, GYRO_XOUT_H, 6, &rawData[0]);
 
     // Turn the MSB and LSB into a signed 16-bit value
