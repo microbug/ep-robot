@@ -1,6 +1,12 @@
 // Copyright 2017 Richard Coleman
 // MPU925(0/5) code taken from Kris Winer (under Beerware license)
 
+// TODO:
+// - Add dt calculation for filter
+// - Add motor control code:
+//     - Basic code
+//     - Encoders to get proportional velocity
+
 // For LCD
 #include <LiquidCrystal.h>
 
@@ -24,10 +30,15 @@ int button_pin_2 = 37;
 
 
 // Define complementary filter variables
+// Current angle (assuming starting at 0)
 float angle = 0;
+// First filter constant
 float filter_constant_a = 0.9800;
+// Second filter constant (must be complementary)
 float filter_constant_b = 1.0 - filter_constant_a;
-float filter_dt = 0.50;
+// float filter_dt = 0.50;
+// Used to keep track of time since filter last ran
+unsigned long filter_last_time = 0;
 
 // If this is 0, motors will not be tested
 #define TEST_MOTORS 0
@@ -360,10 +371,10 @@ void setup() {
     }
 
 
-
     LCD.clear();
     LCD.print("Ready");
     Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
+    filter_last_time = micros();
 }
 
 
@@ -408,14 +419,18 @@ void loop() {
     Serial.println("°/s");
 
     // Update angle using complementary filter
-    angle = filter_constant_a*(angle + gy*filter_dt) + filter_constant_b*ax;
+    unsigned long dt;
+    dt = micros() - filter_last_time;
+    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
+
 
     Serial.print("Angle: ");
     Serial.print(angle);
     Serial.print("\n");
 
-    // Tune this to adjust feedback loop speed
-    delay(100);
+    delay(100);  // Tune this to adjust feedback loop speed
+
+    filter_last_time = micros();
 }
 
 
