@@ -30,15 +30,23 @@ int button_pin_2 = 37;
 
 
 // Define complementary filter variables
+
 // Current angle (assuming starting at 0)
 float angle = 0;
+
 // First filter constant
 float filter_constant_a = 0.9800;
-// Second filter constant (must be complementary)
+
+// Second filter constant (must be complementary;
+// filter_constant_a + filter_constant_b === 1)
 float filter_constant_b = 1.0 - filter_constant_a;
-// float filter_dt = 0.50;
+
 // Used to keep track of time since filter last ran
 unsigned long filter_last_time = 0;
+
+// Used to store the last frequency of the filter
+// so that it can be printed occasionally
+float filter_last_frequency = 0;
 
 // Various precompiler settings
 #define TEST_MOTORS false
@@ -46,6 +54,7 @@ unsigned long filter_last_time = 0;
 #define PRINT_ACCEL_DATA true
 #define PRINT_ANGLE true
 #define PRINT_MOTOR_VELOCITY false
+#define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
 // For MPU9255
@@ -359,19 +368,21 @@ void setup() {
     digitalWrite(button_pin_1, LOW);
 
     pinMode(button_pin_2, INPUT_PULLUP);
-    delay(20);
-    bool button_pressed = false;
+    #if WAIT_FOR_BUTTON_ON_STARTUP
+        delay(20);
+        bool button_pressed = false;
 
-    // Debounce: check if button is depressed twice in 50ms
-    while (button_pressed == false) {
-        if (digitalRead(button_pin_2) == LOW) {
-            delay(50);
+        // Debounce: check if button is depressed twice in 50ms
+        while (button_pressed == false) {
             if (digitalRead(button_pin_2) == LOW) {
-                button_pressed = true;
+                delay(50);
+                if (digitalRead(button_pin_2) == LOW) {
+                    button_pressed = true;
+                }
             }
+            delay(10);
         }
-        delay(10);
-    }
+    #endif
 
 
     LCD.clear();
@@ -382,7 +393,7 @@ void setup() {
 
 
 void loop() {
-    Serial.println("Running loop()");
+    Serial.println("\r\nRunning loop()");
 
     float ax, ay, az, gx, gy, gz;
     get_imu_data(&ax, &ay, &az, &gx, &gy, &gz);
@@ -390,20 +401,24 @@ void loop() {
     #if PRINT_ANGLE
         Serial.print("Angle: ");
         Serial.print(angle);
-        Serial.print("\n");
+        Serial.println("°");
     #endif
 
-    delay(10);  // Tune this to adjust feedback loop speed
 
-    // Update angle using complementary filter
-    unsigned long dt_us = micros() - filter_last_time;
-    // convert dt_s from microseconds to seconds
-    float dt = static_cast<float>(dt_us) / 1000000.0;
-    Serial.print("Filter running at ");
-    Serial.print(1/dt, 2); // Print (1/dt) to 2 decimal places
-    Serial.println("Hz");
-    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
-    filter_last_time = micros();
+    // // Update angle using complementary filter
+    // unsigned long dt_us = micros() - filter_last_time;
+    // // convert dt_s from microseconds to seconds
+    // float dt = static_cast<float>(dt_us) / 1000000.0;
+    // Serial.print("Filter running at ");
+    // Serial.print(1/dt, 2); // Print (1/dt) to 2 decimal places
+    // Serial.println("Hz");
+    // angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
+    // filter_last_time = micros();
+
+    update_complementary_filter(gy, ax);
+    // Serial.print("Filter running at ");
+    // Serial.print(filter_last_frequency, 2); // Print (1/dt) to 2 decimal places
+    // Serial.println("Hz");
 }
 
 
@@ -457,13 +472,6 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 }
 
 
-void print_filter_speed(float dt) {
-    Serial.print("Filter running at ");
-    Serial.print(1/dt, 2);  // Print (1/dt) to 2 decimal places
-    Serial.println("Hz");
-}
-
-
 void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*gz) {
     while (1) {
         // If MPU9255 ready bit is set
@@ -507,6 +515,21 @@ void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*g
     #endif
 }
 
+
+// Update angle using complementary filter
+void update_complementary_filter(float gy, float ax) {
+    unsigned long dt_us = micros() - filter_last_time;
+    // convert dt_s from microseconds to seconds
+    float dt = static_cast<float>(dt_us) / 1000000.0;
+    // store frequency in Hz in filter_last_frequency
+    filter_last_frequency = 1/dt;
+    // update filter
+    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
+    filter_last_time = micros();
+
+    Serial.print("filter_last_frequency=");
+    Serial.println(filter_last_frequency, 2);
+}
 
 
 
