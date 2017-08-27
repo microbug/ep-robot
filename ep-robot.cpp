@@ -44,7 +44,7 @@ const float filter_target_frequency = 25;
 const float filter_target_period = (1.0 / filter_target_frequency);
 
 // First filter constant
-const float filter_constant_a = 0.9800;
+const float filter_constant_a = 0.9259;
 
 // Second filter constant (must be complementary;
 // filter_constant_a + filter_constant_b === 1)
@@ -59,14 +59,14 @@ float filter_last_frequency = 0;
 
 // Various precompiler settings
 #define TEST_MOTORS false
-#define PRINT_ACCEL_DATA true
-#define PRINT_ANGLE true
-#define PLOT_ANGLE false
-#define PRINT_DELAY_INFO true
-#define PRINT_GYRO_DATA true
-#define PRINT_LOOP_FREQUENCY true
+#define PRINT_ACCEL_DATA false
+#define PRINT_ANGLE false
+#define PLOT_ANGLE true
+#define PRINT_DELAY_INFO false
+#define PRINT_GYRO_DATA false
+#define PRINT_LOOP_FREQUENCY false
 #define PRINT_MOTOR_VELOCITY false
-#define PRINT_WARNINGS true
+#define PRINT_WARNINGS false
 #define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
@@ -371,9 +371,9 @@ void setup() {
     Serial.print("Filter constant B: ");
     Serial.println(filter_constant_b);
     Serial.print("Targetting frequency ");
-    Serial.print(filter_target_frequency, 0);
+    Serial.print(filter_target_frequency);
     Serial.print("Hz with corresponding period ");
-    Serial.print(filter_target_period, 4);
+    Serial.print(filter_target_period);
     Serial.println("s");
 
     #if WAIT_FOR_BUTTON_ON_STARTUP
