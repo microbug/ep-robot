@@ -34,15 +34,22 @@ int button_pin_2 = 37;
 // Current angle (assuming starting at 0)
 float angle = 0;
 
+// Target filter frequency in Hz
+const float filter_target_frequency = 25;
+
+// Target filter time period in Hz (calculated
+// from frequency above)
+const float filter_target_period = (1.0 / filter_target_frequency);
+
 // First filter constant
-float filter_constant_a = 0.9800;
+const float filter_constant_a = 0.9800;
 
 // Second filter constant (must be complementary;
 // filter_constant_a + filter_constant_b === 1)
-float filter_constant_b = 1.0 - filter_constant_a;
+const float filter_constant_b = 1.0 - filter_constant_a;
 
 // Used to keep track of time since filter last ran
-unsigned long filter_last_time = 0;
+unsigned long filter_last_time;
 
 // Used to store the last frequency of the filter
 // so that it can be printed occasionally
@@ -53,7 +60,10 @@ float filter_last_frequency = 0;
 #define PRINT_GYRO_DATA true
 #define PRINT_ACCEL_DATA true
 #define PRINT_ANGLE true
+#define PLOT_ANGLE false
+#define PRINT_WARNINGS true
 #define PRINT_MOTOR_VELOCITY false
+#define PRINT_LOOP_FREQUENCY true
 #define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
@@ -357,18 +367,23 @@ void setup() {
     Serial.println(filter_constant_a);
     Serial.print("Filter constant B: ");
     Serial.println(filter_constant_b);
+    Serial.print("Targetting frequency ");
+    Serial.print(filter_target_frequency, 0);
+    Serial.print("Hz with corresponding period ");
+    Serial.print(filter_target_period, 4);
+    Serial.println("s");
 
-    Serial.println("Waiting for button press");
-    LCD.setCursor(0, 1);
-    LCD.print("Press button... ");
-
-    // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
-    // resistor. When button is pressed, button_pin_2 is pulled low.
-    pinMode(button_pin_1, OUTPUT);
-    digitalWrite(button_pin_1, LOW);
-
-    pinMode(button_pin_2, INPUT_PULLUP);
     #if WAIT_FOR_BUTTON_ON_STARTUP
+        Serial.println("\r\nWaiting for button press...");
+        LCD.setCursor(0, 1);
+        LCD.print("Press button... ");
+
+        // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
+        // resistor. When button is pressed, button_pin_2 is pulled low.
+        pinMode(button_pin_1, OUTPUT);
+        digitalWrite(button_pin_1, LOW);
+
+        pinMode(button_pin_2, INPUT_PULLUP);
         delay(20);
         bool button_pressed = false;
 
@@ -383,7 +398,6 @@ void setup() {
             delay(10);
         }
     #endif
-
 
     LCD.clear();
     LCD.print("Ready");
@@ -402,23 +416,18 @@ void loop() {
         Serial.print("Angle: ");
         Serial.print(angle);
         Serial.println("°");
+    #elif PLOT_ANGLE
+        Serial.println(angle);
     #endif
 
-
-    // // Update angle using complementary filter
-    // unsigned long dt_us = micros() - filter_last_time;
-    // // convert dt_s from microseconds to seconds
-    // float dt = static_cast<float>(dt_us) / 1000000.0;
-    // Serial.print("Filter running at ");
-    // Serial.print(1/dt, 2); // Print (1/dt) to 2 decimal places
-    // Serial.println("Hz");
-    // angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
-    // filter_last_time = micros();
-
+    delay_to_meet_filter_frequency_target();
     update_complementary_filter(gy, ax);
-    // Serial.print("Filter running at ");
-    // Serial.print(filter_last_frequency, 2); // Print (1/dt) to 2 decimal places
-    // Serial.println("Hz");
+
+    #if PRINT_LOOP_FREQUENCY
+        Serial.print("Loop running at ");
+        Serial.print(filter_last_frequency, 2);
+        Serial.println("Hz");
+    #endif
 }
 
 
@@ -478,7 +487,9 @@ void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*g
         if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
             break;
         } else {
-            Serial.println("Warning: couldn't get MPU9250 data, retrying");
+            #if PRINT_WARNINGS
+                Serial.println("Warning: couldn't get MPU9250 data, retrying");
+            #endif
         }
     }
 
@@ -518,17 +529,36 @@ void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*g
 
 // Update angle using complementary filter
 void update_complementary_filter(float gy, float ax) {
-    unsigned long dt_us = micros() - filter_last_time;
-    // convert dt_s from microseconds to seconds
-    float dt = static_cast<float>(dt_us) / 1000000.0;
+    // // Wait for dt target
+    // float dt = (micros() - filter_last_time) / 1000000.0;
+    // if (dt < filter_target_period) {
+    //     delay(filter_target_period - dt);
+    // }
+
+
+    // unsigned long dt_us = micros() - filter_last_time;
+    // // convert dt_s from microseconds to seconds
+    // float dt = static_cast<float>(dt_us) / 1000000.0;
+
+    // Update dt
+    float dt = (micros() - filter_last_time) / 1000000.0;
     // store frequency in Hz in filter_last_frequency
     filter_last_frequency = 1/dt;
     // update filter
     angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
     filter_last_time = micros();
+}
 
-    Serial.print("filter_last_frequency=");
-    Serial.println(filter_last_frequency, 2);
+
+void delay_to_meet_filter_frequency_target() {
+    float dt = (micros() - filter_last_time) / 1000000.0;
+    if (dt < filter_target_period) {
+        int ms_to_wait = (filter_target_period - dt) * 1000.0;
+        Serial.print("Delaying ");
+        Serial.print(ms_to_wait);
+        Serial.println("ms");
+        delay(ms_to_wait);
+    }
 }
 
 
