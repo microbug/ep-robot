@@ -16,9 +16,9 @@ LiquidCrystal LCD(53, 51, 49, 47, 45, 43, 41);
 
 // Define L298N pins
 //  Left
+const int pwm_pin_l = 2;
 const int dir1_pin_l = 3;
 const int dir2_pin_l = 4;
-const int pwm_pin_l = 2;
 //  Right
 const int dir1_pin_r = 5;
 const int dir2_pin_r = 6;
@@ -533,21 +533,11 @@ void get_imu_data() {
 
 // Update angle using complementary filter
 void update_complementary_filter(float gy, float ax) {
-    // // Wait for dt target
-    // float dt = (micros() - filter_last_time) / 1000000.0;
-    // if (dt < filter_target_period) {
-    //     delay(filter_target_period - dt);
-    // }
-
-
-    // unsigned long dt_us = micros() - filter_last_time;
-    // // convert dt_s from microseconds to seconds
-    // float dt = static_cast<float>(dt_us) / 1000000.0;
-
-    // Update dt
     float dt = (micros() - filter_last_time) / 1000000.0;
-    // store frequency in Hz in filter_last_frequency
-    filter_last_frequency = 1/dt;
+    #if PRINT_LOOP_FREQUENCY
+        // store frequency (in Hz) in filter_last_frequency for later display
+        filter_last_frequency = 1/dt;
+    #endif
     // update filter
     angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
     filter_last_time = micros();
