@@ -34,11 +34,13 @@ const int button_pin_2 = 37;
 // Current angle (assuming starting at 0)
 float angle = 0;
 
+// Milliseconds of trim to remove from delay time
+const int filter_target_period_trim = 1;
+
 // Target filter frequency in Hz
 const float filter_target_frequency = 25;
 
-// Target filter time period in Hz (calculated
-// from frequency above)
+// Target filter time period in Hz (calculated from frequency above)
 const float filter_target_period = (1.0 / filter_target_frequency);
 
 // First filter constant
@@ -57,13 +59,14 @@ float filter_last_frequency = 0;
 
 // Various precompiler settings
 #define TEST_MOTORS false
-#define PRINT_GYRO_DATA true
 #define PRINT_ACCEL_DATA true
 #define PRINT_ANGLE true
 #define PLOT_ANGLE false
-#define PRINT_WARNINGS true
-#define PRINT_MOTOR_VELOCITY false
+#define PRINT_DELAY_INFO true
+#define PRINT_GYRO_DATA true
 #define PRINT_LOOP_FREQUENCY true
+#define PRINT_MOTOR_VELOCITY false
+#define PRINT_WARNINGS true
 #define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
@@ -555,10 +558,15 @@ void delay_to_meet_filter_frequency_target() {
     float dt = (micros() - filter_last_time) / 1000000.0;
     if (dt < filter_target_period) {
         int ms_to_wait = (filter_target_period - dt) * 1000.0;
-        Serial.print("Delaying ");
-        Serial.print(ms_to_wait);
-        Serial.println("ms");
-        delay(ms_to_wait);
+        ms_to_wait -= filter_target_period_trim;
+        if (ms_to_wait > 0) {
+            #if PRINT_DELAY_INFO
+                Serial.print("Delaying ");
+                Serial.print(ms_to_wait);
+                Serial.println("ms");
+            #endif
+            delay(ms_to_wait);
+        }
     }
 }
 
