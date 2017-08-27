@@ -273,11 +273,21 @@ void setup() {
 
     // Run self test on LCD
     Serial.println("\r\nTesting LCD");
+    byte lcd_test_character[8] = {0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
+    LCD.createChar(0, lcd_test_character);
     LCD.begin(16, 2);
     LCD.print("ABCDEFGHIJKLMNOP");
     LCD.setCursor(0, 1);
     LCD.print("QRSTUVWXYZ123456");
-    delay(1000);
+    delay(500);
+    LCD.clear();
+    for (char row = 0; row <= 1; row++) {
+        for (char column = 0; column <= 15; column++) {
+            LCD.setCursor(column, row);
+            LCD.write(byte(0));
+        }
+    }
+    delay(500);
     Serial.println("LCD test complete");
     LCD.clear();
     LCD.print("Initialising...");
@@ -310,21 +320,21 @@ void setup() {
 
     Serial.println("\r\nBeginning IMU tests");
     LCD.setCursor(0, 1);
-    LCD.print("Testing IMU:addr");
+    LCD.print("IMU: addr test  ");
     byte c = readByte(MPU9250_ADDRESS, WHO_AM_I_MPU9250);
     Serial.print("MPU9255 has address "); Serial.println(c, HEX);
     Serial.print("MPU9255 should have address "); Serial.println(0x73, HEX);
     if (c != 0x73) {
         Serial.println("ERROR: MPU9255 did not have expected address");
         LCD.setCursor(0, 1);
-        LCD.print("ERR MPU9255 ADDR");
+        LCD.print("IMU: addr error ");
         while (1) {}
     }
 
     // Run self test and calibration on IMU and report results
     Serial.println("Running IMU internal self test");
     LCD.setCursor(0, 1);
-    LCD.print("Testing IMU:self");
+    LCD.print("IMU: self test  ");
     MPU9250SelfTest(SelfTest);
     Serial.print("x-axis self test: acceleration trim within : ");
     Serial.print(SelfTest[0], 1); Serial.println("% of factory value");
@@ -342,7 +352,7 @@ void setup() {
 
     Serial.println("Running IMU calibration");
     LCD.setCursor(0, 1);
-    LCD.print("Calibrating IMU ");
+    LCD.print("IMU: calibration");
     calibrateMPU9250(gyroBias, accelBias);
     Serial.print("MPU9255 accelerometer bias (mg): x=");
     Serial.print(static_cast<int>(1000*accelBias[0]));
@@ -362,7 +372,7 @@ void setup() {
 
     Serial.println("Calibrated IMU, beginning IMU initialisation");
     LCD.setCursor(0, 1);
-    LCD.print("Initialising IMU");
+    LCD.print("IMU: initialise ");
     initMPU9250();
     Serial.println("Completed IMU initialisation");
 
