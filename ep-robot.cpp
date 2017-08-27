@@ -40,15 +40,18 @@ float filter_constant_b = 1.0 - filter_constant_a;
 // Used to keep track of time since filter last ran
 unsigned long filter_last_time = 0;
 
-// If this is 0, motors will not be tested
-#define TEST_MOTORS 0
+// Various precompiler settings
+#define TEST_MOTORS false
+#define PRINT_GYRO_DATA true
+#define PRINT_ACCEL_DATA true
+#define PRINT_ANGLE true
+#define PRINT_MOTOR_VELOCITY false
 
 
 // For MPU9255
 #include <SPI.h>
 #include <Wire.h>
 
-#define PRINT_MOTOR_VELOCITY false
 
 // Magnetometer Registers
 #define AK8963_ADDRESS   0x0C
@@ -341,9 +344,9 @@ void setup() {
     initMPU9250();
     Serial.println("Completed IMU initialisation");
 
-    Serial.print("\r\nfilter_constant_a=");
+    Serial.print("\r\nFilter constant A: ");
     Serial.println(filter_constant_a);
-    Serial.print("filter_constant_b=");
+    Serial.print("Filter constant B: ");
     Serial.println(filter_constant_b);
 
     Serial.println("Waiting for button press");
@@ -381,55 +384,25 @@ void setup() {
 void loop() {
     Serial.println("Running loop()");
 
-    while (1) {
-        // If MPU9255 ready bit is set
-        if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
-            break;
-        } else {
-            Serial.println("Warning: couldn't get MPU9250 data, retrying");
-        }
-    }
+    float ax, ay, az, gx, gy, gz;
+    get_imu_data(&ax, &ay, &az, &gx, &gy, &gz);
 
-    readAccelData(accelCount);
-    getAres();
-    // Calculate acceleration values in Gs
-    ax = (static_cast<float>(accelCount[0]) * aRes);
-    ay = (static_cast<float>(accelCount[1]) * aRes);
-    az = (static_cast<float>(accelCount[2]) * aRes);
-    Serial.print("MPU9255 accelerometer reading: x=");
-    Serial.print(ax);
-    Serial.print("g y=");
-    Serial.print(ay);
-    Serial.print("g z=");
-    Serial.print(az);
-    Serial.println("g");
+    #if PRINT_ANGLE
+        Serial.print("Angle: ");
+        Serial.print(angle);
+        Serial.print("\n");
+    #endif
 
-    readGyroData(gyroCount);
-    getGres();
-    // Calculate gyro values in °/s
-    gx = (static_cast<float>(gyroCount[0]) * gRes);
-    gy = (static_cast<float>(gyroCount[1]) * gRes);
-    gz = (static_cast<float>(gyroCount[2]) * gRes);
-    Serial.print("MPU9255 gyrometer reading: x=");
-    Serial.print(gx);
-    Serial.print("°/s y=");
-    Serial.print(gy);
-    Serial.print("°/s z=");
-    Serial.print(gz);
-    Serial.println("°/s");
+    delay(10);  // Tune this to adjust feedback loop speed
 
     // Update angle using complementary filter
-    unsigned long dt;
-    dt = micros() - filter_last_time;
+    unsigned long dt_us = micros() - filter_last_time;
+    // convert dt_s from microseconds to seconds
+    float dt = static_cast<float>(dt_us) / 1000000.0;
+    Serial.print("Filter running at ");
+    Serial.print(1/dt, 2); // Print (1/dt) to 2 decimal places
+    Serial.println("Hz");
     angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
-
-
-    Serial.print("Angle: ");
-    Serial.print(angle);
-    Serial.print("\n");
-
-    delay(100);  // Tune this to adjust feedback loop speed
-
     filter_last_time = micros();
 }
 
@@ -484,9 +457,55 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 }
 
 
+void print_filter_speed(float dt) {
+    Serial.print("Filter running at ");
+    Serial.print(1/dt, 2);  // Print (1/dt) to 2 decimal places
+    Serial.println("Hz");
+}
 
 
+void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*gz) {
+    while (1) {
+        // If MPU9255 ready bit is set
+        if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
+            break;
+        } else {
+            Serial.println("Warning: couldn't get MPU9250 data, retrying");
+        }
+    }
 
+    readAccelData(accelCount);
+    getAres();
+    // Calculate acceleration values in Gs
+    *ax = (static_cast<float>(accelCount[0]) * aRes);
+    *ay = (static_cast<float>(accelCount[1]) * aRes);
+    *az = (static_cast<float>(accelCount[2]) * aRes);
+    #if PRINT_ACCEL_DATA
+        Serial.print("MPU9255 accelerometer reading: x=");
+        Serial.print(*ax);
+        Serial.print("g y=");
+        Serial.print(*ay);
+        Serial.print("g z=");
+        Serial.print(*az);
+        Serial.println("g");
+    #endif
+
+    readGyroData(gyroCount);
+    getGres();
+    // Calculate gyro values in °/s
+    *gx = (static_cast<float>(gyroCount[0]) * gRes);
+    *gy = (static_cast<float>(gyroCount[1]) * gRes);
+    *gz = (static_cast<float>(gyroCount[2]) * gRes);
+    #if PRINT_GYRO_DATA
+        Serial.print("MPU9255 gyrometer reading: x=");
+        Serial.print(*gx);
+        Serial.print("°/s y=");
+        Serial.print(*gy);
+        Serial.print("°/s z=");
+        Serial.print(*gz);
+        Serial.println("°/s");
+    #endif
+}
 
 
 
