@@ -16,17 +16,17 @@ LiquidCrystal LCD(53, 51, 49, 47, 45, 43, 41);
 
 // Define L298N pins
 //  Left
-int dir1_pin_l = 3;
-int dir2_pin_l = 4;
-int pwm_pin_l = 2;
+const int dir1_pin_l = 3;
+const int dir2_pin_l = 4;
+const int pwm_pin_l = 2;
 //  Right
-int dir1_pin_r = 5;
-int dir2_pin_r = 6;
-int pwm_pin_r = 7;
+const int dir1_pin_r = 5;
+const int dir2_pin_r = 6;
+const int pwm_pin_r = 7;
 
 // Define button pins
-int button_pin_1 = 35;
-int button_pin_2 = 37;
+const int button_pin_1 = 35;
+const int button_pin_2 = 37;
 
 
 // Define complementary filter variables
@@ -409,8 +409,9 @@ void setup() {
 void loop() {
     Serial.println("\r\nRunning loop()");
 
-    float ax, ay, az, gx, gy, gz;
-    get_imu_data(&ax, &ay, &az, &gx, &gy, &gz);
+    //float ax, ay, az, gx, gy, gz;
+    //get_imu_data(&ax, &ay, &az, &gx, &gy, &gz);
+    get_imu_data();
 
     #if PRINT_ANGLE
         Serial.print("Angle: ");
@@ -481,7 +482,7 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
 }
 
 
-void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*gz) {
+void get_imu_data() {
     while (1) {
         // If MPU9255 ready bit is set
         if (readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01) {
@@ -496,32 +497,32 @@ void get_imu_data(float* ax, float* ay, float* az, float* gx, float* gy, float*g
     readAccelData(accelCount);
     getAres();
     // Calculate acceleration values in Gs
-    *ax = (static_cast<float>(accelCount[0]) * aRes);
-    *ay = (static_cast<float>(accelCount[1]) * aRes);
-    *az = (static_cast<float>(accelCount[2]) * aRes);
+    ax = (static_cast<float>(accelCount[0]) * aRes);
+    ay = (static_cast<float>(accelCount[1]) * aRes);
+    az = (static_cast<float>(accelCount[2]) * aRes);
     #if PRINT_ACCEL_DATA
         Serial.print("MPU9255 accelerometer reading: x=");
-        Serial.print(*ax);
+        Serial.print(ax);
         Serial.print("g y=");
-        Serial.print(*ay);
+        Serial.print(ay);
         Serial.print("g z=");
-        Serial.print(*az);
+        Serial.print(az);
         Serial.println("g");
     #endif
 
     readGyroData(gyroCount);
     getGres();
     // Calculate gyro values in °/s
-    *gx = (static_cast<float>(gyroCount[0]) * gRes);
-    *gy = (static_cast<float>(gyroCount[1]) * gRes);
-    *gz = (static_cast<float>(gyroCount[2]) * gRes);
+    gx = (static_cast<float>(gyroCount[0]) * gRes);
+    gy = (static_cast<float>(gyroCount[1]) * gRes);
+    gz = (static_cast<float>(gyroCount[2]) * gRes);
     #if PRINT_GYRO_DATA
         Serial.print("MPU9255 gyrometer reading: x=");
-        Serial.print(*gx);
+        Serial.print(gx);
         Serial.print("°/s y=");
-        Serial.print(*gy);
+        Serial.print(gy);
         Serial.print("°/s z=");
-        Serial.print(*gz);
+        Serial.print(gz);
         Serial.println("°/s");
     #endif
 }
