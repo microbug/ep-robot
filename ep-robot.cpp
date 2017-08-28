@@ -558,7 +558,7 @@ void update_complementary_filter(float gy, float ax) {
         // if frequency will not be printed later, this doesn't need to run
         filter_last_frequency = 1/dt;
     #endif
-    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax*radians_to_degrees;
+    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax*radians_to_degrees*-1;
 }
 
 
