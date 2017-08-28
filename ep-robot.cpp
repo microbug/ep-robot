@@ -2,7 +2,6 @@
 // MPU925(0/5) code taken from Kris Winer (under Beerware license)
 
 // TODO:
-// - Add dt calculation for filter
 // - Add motor control code:
 //     - Basic code
 //     - Encoders to get proportional velocity
@@ -28,6 +27,8 @@ const int pwm_pin_r = 7;
 const int button_pin_1 = 35;
 const int button_pin_2 = 37;
 
+int loop_count;
+
 
 // Define complementary filter variables
 
@@ -38,13 +39,13 @@ float angle = 0;
 const int filter_target_period_trim = 1;
 
 // Target filter frequency in Hz
-const float filter_target_frequency = 25;
+const float filter_target_frequency = 50;
 
 // Target filter time period in Hz (calculated from frequency above)
 const float filter_target_period = (1.0 / filter_target_frequency);
 
 // First filter constant
-const float filter_constant_a = 0.9259;
+const float filter_constant_a = 0.98;
 
 // Second filter constant (must be complementary;
 // filter_constant_a + filter_constant_b === 1)
@@ -56,6 +57,9 @@ unsigned long filter_last_time;
 // Used to store the last frequency of the filter
 // so that it can be printed occasionally
 float filter_last_frequency = 0;
+
+// Decimal value of 360/2pi
+const float radians_to_degrees = 57.2957795;
 
 // Various precompiler settings
 #define TEST_MOTORS false
@@ -261,7 +265,7 @@ float ax, ay, az, gx, gy, gz;  // Variables to hold latest sensor data values
 
 void setup() {
     Wire.begin();
-    Serial.begin(115200);
+    Serial.begin(2000000);
     Serial.println("\r\n--------------- RUNNING SETUP ---------------\r\n");
 
     pinMode(dir1_pin_l, OUTPUT);
@@ -377,9 +381,9 @@ void setup() {
     Serial.println("Completed IMU initialisation");
 
     Serial.print("\r\nFilter constant A: ");
-    Serial.println(filter_constant_a);
+    Serial.println(filter_constant_a, 4);
     Serial.print("Filter constant B: ");
-    Serial.println(filter_constant_b);
+    Serial.println(filter_constant_b, 4);
     Serial.print("Targetting frequency ");
     Serial.print(filter_target_frequency);
     Serial.print("Hz with corresponding period ");
@@ -431,7 +435,12 @@ void loop() {
         Serial.print(angle);
         Serial.println("°");
     #elif PLOT_ANGLE
-        Serial.println(angle);
+        if (loop_count >= 5) {
+            Serial.println(angle);
+            loop_count = 0;
+        } else {
+            loop_count++;
+        }
     #endif
 
     delay_to_meet_filter_frequency_target();
@@ -541,21 +550,23 @@ void get_imu_data() {
 }
 
 
-// Update angle using complementary filter
 void update_complementary_filter(float gy, float ax) {
     float dt = (micros() - filter_last_time) / 1000000.0;
+    filter_last_time = micros();
     #if PRINT_LOOP_FREQUENCY
         // store frequency (in Hz) in filter_last_frequency for later display
+        // if frequency will not be printed later, this doesn't need to run
         filter_last_frequency = 1/dt;
     #endif
-    // update filter
-    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax;
-    filter_last_time = micros();
+    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax*radians_to_degrees;
 }
 
 
 void delay_to_meet_filter_frequency_target() {
+    // time in seconds since last filter run
     float dt = (micros() - filter_last_time) / 1000000.0;
+
+    // if running too fast
     if (dt < filter_target_period) {
         int ms_to_wait = (filter_target_period - dt) * 1000.0;
         ms_to_wait -= filter_target_period_trim;
@@ -567,6 +578,10 @@ void delay_to_meet_filter_frequency_target() {
             #endif
             delay(ms_to_wait);
         }
+    } else {
+        #if PRINT_WARNINGS
+            Serial.println("Warning: running behind filter frequency target");
+        #endif
     }
 }
 
@@ -1148,6 +1163,7 @@ void writeByte(uint8_t address, uint8_t subAddress, uint8_t data) {
     Wire.endTransmission();           // Send the Tx buffer
 }
 
+
 uint8_t readByte(uint8_t address, uint8_t subAddress) {
     uint8_t data;
     // Initialize the Tx buffer
@@ -1162,6 +1178,7 @@ uint8_t readByte(uint8_t address, uint8_t subAddress) {
     data = Wire.read();
     return data;
 }
+
 
 void readBytes(uint8_t address, uint8_t subAddress, uint8_t count,
                uint8_t * dest) {
@@ -1179,11 +1196,3 @@ void readBytes(uint8_t address, uint8_t subAddress, uint8_t count,
         dest[i++] = Wire.read();
     }
 }
-
-
-
-
-
-
-
-
