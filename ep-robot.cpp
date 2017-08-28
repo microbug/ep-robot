@@ -36,10 +36,10 @@ int loop_count;
 float angle = 0;
 
 // Milliseconds of trim to remove from delay time
-const int filter_target_period_trim = 1;
+const int filter_target_period_trim = 0;
 
 // Target filter frequency in Hz
-const float filter_target_frequency = 50;
+const float filter_target_frequency = 100;
 
 // Target filter time period in Hz (calculated from frequency above)
 const float filter_target_period = (1.0 / filter_target_frequency);
@@ -64,13 +64,13 @@ const float radians_to_degrees = 57.2957795;
 // Various precompiler settings
 #define TEST_MOTORS false
 #define PRINT_ACCEL_DATA false
-#define PRINT_ANGLE false
-#define PLOT_ANGLE true
-#define PRINT_DELAY_INFO false
+#define PRINT_ANGLE true
+#define PLOT_ANGLE false
+#define PRINT_DELAY_INFO true
 #define PRINT_GYRO_DATA false
-#define PRINT_LOOP_FREQUENCY false
+#define PRINT_LOOP_FREQUENCY true
 #define PRINT_MOTOR_VELOCITY false
-#define PRINT_WARNINGS false
+#define PRINT_WARNINGS true
 #define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
