@@ -446,6 +446,11 @@ void loop() {
     get_imu_data();
     update_complementary_filter(gy, ax);
 
+    if (angle > 5) {
+        motors_set_velocity(100, FORWARDS);
+    } else if (angle < -5) {
+        motors_set_velocity(100, BACKWARDS);
+    }
 }
 
 
