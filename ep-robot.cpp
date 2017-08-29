@@ -27,16 +27,19 @@ const int pwm_pin_r = 7;
 const int button_pin_1 = 35;
 const int button_pin_2 = 37;
 
-int loop_count;
+unsigned long loop_count;
 
+#define FORWARDS true
+#define BACKWARDS false
 
 // Define complementary filter variables
 
 // Current angle (assuming starting at 0)
 float angle = 0;
 
-// Milliseconds of trim to remove from delay time
-const int filter_target_period_trim = 0;
+// Milliseconds of trim to add to delay time
+// Positive will reduce filter frequency, negative will increase it
+const int filter_target_period_trim = -2;
 
 // Target filter frequency in Hz
 const float filter_target_frequency = 100;
@@ -64,15 +67,14 @@ const float radians_to_degrees = 57.2957795;
 // Various precompiler settings
 #define TEST_MOTORS false
 #define PRINT_ACCEL_DATA false
-#define PRINT_ANGLE true
-#define PLOT_ANGLE false
-#define PRINT_DELAY_INFO true
+#define PRINT_ANGLE false
+#define PLOT_ANGLE true
+#define PRINT_DELAY_INFO false
 #define PRINT_GYRO_DATA false
-#define PRINT_LOOP_FREQUENCY true
+#define PRINT_LOOP_FREQUENCY false
 #define PRINT_MOTOR_VELOCITY false
 #define PRINT_WARNINGS true
-#define WAIT_FOR_BUTTON_ON_STARTUP false
-
+#define WAIT_FOR_BUTTON_ON_STARTUP true
 
 // For MPU9255
 #include <SPI.h>
@@ -277,7 +279,8 @@ void setup() {
 
     // Run self test on LCD
     Serial.println("\r\nTesting LCD");
-    byte lcd_test_character[8] = {0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
+    byte lcd_test_character[8] = {0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F,
+        0x1F, 0x1F};
     LCD.createChar(0, lcd_test_character);
     LCD.begin(16, 2);
     LCD.print("ABCDEFGHIJKLMNOP");
@@ -302,24 +305,41 @@ void setup() {
         LCD.setCursor(0, 1);
         // Must print 16 characters to clear any previous text
         LCD.print("Testing motors  ");
-        // left_motor_set_velocity(255, true);
-        // right_motor_set_velocity(255, false);
-        // delay(1000);
-        // left_motor_set_velocity(255, false);
-        // right_motor_set_velocity(255, true);
-        // delay(1000);
-        // left_motor_set_velocity(0, false);
-        // right_motor_set_velocity(0, false);
         int i;
         for (i = 0; i < 256; i++) {
-            left_motor_set_velocity(i, true);
-            right_motor_set_velocity(i, false);
+            motors_set_velocity(i, FORWARDS);
             delay(10);
         }
         delay(500);
-        left_motor_set_velocity(0, true);
-        right_motor_set_velocity(0, true);
+        motors_set_velocity(0, FORWARDS);
         Serial.println("Completed motor test");
+    #endif
+
+
+    #if WAIT_FOR_BUTTON_ON_STARTUP
+        Serial.println("\r\nPlace robot upright and motionless, then press button...");
+        LCD.setCursor(0, 1);
+        LCD.print("Position & btn..");
+
+        // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
+        // resistor. When button is pressed, button_pin_2 is pulled low.
+        pinMode(button_pin_1, OUTPUT);
+        digitalWrite(button_pin_1, LOW);
+
+        pinMode(button_pin_2, INPUT_PULLUP);
+        delay(20);
+        bool button_pressed = false;
+
+        // Debounce: check if button is depressed twice in 50ms
+        while (button_pressed == false) {
+            if (digitalRead(button_pin_2) == LOW) {
+                delay(50);
+                if (digitalRead(button_pin_2) == LOW) {
+                    button_pressed = true;
+                }
+            }
+            delay(10);
+        }
     #endif
 
     Serial.println("\r\nBeginning IMU tests");
@@ -390,31 +410,6 @@ void setup() {
     Serial.print(filter_target_period);
     Serial.println("s");
 
-    #if WAIT_FOR_BUTTON_ON_STARTUP
-        Serial.println("\r\nWaiting for button press...");
-        LCD.setCursor(0, 1);
-        LCD.print("Press button... ");
-
-        // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
-        // resistor. When button is pressed, button_pin_2 is pulled low.
-        pinMode(button_pin_1, OUTPUT);
-        digitalWrite(button_pin_1, LOW);
-
-        pinMode(button_pin_2, INPUT_PULLUP);
-        delay(20);
-        bool button_pressed = false;
-
-        // Debounce: check if button is depressed twice in 50ms
-        while (button_pressed == false) {
-            if (digitalRead(button_pin_2) == LOW) {
-                delay(50);
-                if (digitalRead(button_pin_2) == LOW) {
-                    button_pressed = true;
-                }
-            }
-            delay(10);
-        }
-    #endif
 
     LCD.clear();
     LCD.print("Ready");
@@ -424,37 +419,37 @@ void setup() {
 
 
 void loop() {
-    Serial.println("\r\nRunning loop()");
+    loop_count++;
 
-    //float ax, ay, az, gx, gy, gz;
-    //get_imu_data(&ax, &ay, &az, &gx, &gy, &gz);
-    get_imu_data();
+    #if PRINT_LOOP_FREQUENCY
+        if (loop_count %  50 == 0) {
+            Serial.print("Loop running at ");
+            Serial.print(filter_last_frequency, 2);
+            Serial.println("Hz");
+            LCD.setCursor(0, 1);
+            LCD.print(filter_last_frequency, 1);
+            LCD.print("Hz");
+        }
+    #endif
 
     #if PRINT_ANGLE
         Serial.print("Angle: ");
         Serial.print(angle);
         Serial.println("°");
     #elif PLOT_ANGLE
-        if (loop_count >= 5) {
+        if (loop_count % 20 == 0) {
             Serial.println(angle);
-            loop_count = 0;
-        } else {
-            loop_count++;
         }
     #endif
 
     delay_to_meet_filter_frequency_target();
+    get_imu_data();
     update_complementary_filter(gy, ax);
 
-    #if PRINT_LOOP_FREQUENCY
-        Serial.print("Loop running at ");
-        Serial.print(filter_last_frequency, 2);
-        Serial.println("Hz");
-    #endif
 }
 
 
-void left_motor_set_velocity(unsigned int speed, bool clockwise) {
+void left_motor_set_velocity(unsigned char speed, bool clockwise) {
     /*
      * int speed: speed from 0 to 255
      * bool clockwise: whether to turn clockwise or anticlockwise
@@ -479,7 +474,7 @@ void left_motor_set_velocity(unsigned int speed, bool clockwise) {
 }
 
 
-void right_motor_set_velocity(unsigned int speed, bool clockwise) {
+void right_motor_set_velocity(unsigned char speed, bool clockwise) {
     /*
      * int speed: speed from 0 to 255
      * bool clockwise: whether to turn clockwise or anticlockwise
@@ -501,6 +496,14 @@ void right_motor_set_velocity(unsigned int speed, bool clockwise) {
         digitalWrite(dir1_pin_r, HIGH);
         digitalWrite(dir2_pin_r, LOW);
     }
+}
+
+
+void motors_set_velocity(unsigned char speed, bool direction) {
+    // direction: true=forwards, false=backwards
+    // use FORWARDS and BACKWARDS for better legibility
+    right_motor_set_velocity(speed, direction);
+    left_motor_set_velocity(speed, !direction);
 }
 
 
@@ -558,7 +561,8 @@ void update_complementary_filter(float gy, float ax) {
         // if frequency will not be printed later, this doesn't need to run
         filter_last_frequency = 1/dt;
     #endif
-    angle = filter_constant_a*(angle + gy*dt) + filter_constant_b*ax*radians_to_degrees*-1;
+    angle = filter_constant_a * (angle + gy * dt) + \
+            filter_constant_b * ax * radians_to_degrees * -1;
 }
 
 
@@ -569,7 +573,7 @@ void delay_to_meet_filter_frequency_target() {
     // if running too fast
     if (dt < filter_target_period) {
         int ms_to_wait = (filter_target_period - dt) * 1000.0;
-        ms_to_wait -= filter_target_period_trim;
+        ms_to_wait += filter_target_period_trim;
         if (ms_to_wait > 0) {
             #if PRINT_DELAY_INFO
                 Serial.print("Delaying ");
@@ -579,6 +583,8 @@ void delay_to_meet_filter_frequency_target() {
             delay(ms_to_wait);
         }
     } else {
+        LCD.setCursor(0, 0);
+        LCD.print("WARN: freq low  ");
         #if PRINT_WARNINGS
             Serial.println("Warning: running behind filter frequency target");
         #endif
