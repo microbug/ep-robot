@@ -32,6 +32,8 @@ unsigned long loop_count;
 #define FORWARDS true
 #define BACKWARDS false
 
+const float motor_controller_gain = 12;
+
 // Define complementary filter variables
 
 // Current angle (assuming starting at 0)
@@ -446,10 +448,26 @@ void loop() {
     get_imu_data();
     update_complementary_filter(gy, ax);
 
-    if (angle > 5) {
-        motors_set_velocity(100, FORWARDS);
-    } else if (angle < -5) {
-        motors_set_velocity(100, BACKWARDS);
+    if (angle > 0) {
+        unsigned int power_int = floor(angle*motor_controller_gain);
+        unsigned char power;
+        if (power_int > 255) {
+            power = 255;
+        } else {
+            power = power_int;
+        }
+        motors_set_velocity(power, BACKWARDS);
+    } else if (angle < 0) {
+        unsigned int power_int = floor(angle*motor_controller_gain*-1);
+        unsigned char power;
+        if (power_int > 255) {
+            power = 255;
+        } else {
+            power = power_int;
+        }
+        motors_set_velocity(power, FORWARDS);
+    } else {
+        motors_set_velocity(0, FORWARDS);
     }
 }
 
