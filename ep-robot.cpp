@@ -33,9 +33,9 @@ unsigned long loop_count;
 #define BACKWARDS false
 
 // Proportional constant (Kp)
-const float pd_controller_kp = 10;
+const float pd_controller_kp = 5;
 // Derivative constant (Kd)
-const float pd_controller_kd = 10;
+const float pd_controller_kd = 1;
 
 // Define complementary filter variables
 
@@ -433,16 +433,16 @@ void setup() {
 void loop() {
     loop_count++;
 
-    #if PRINT_LOOP_FREQUENCY
-        if (loop_count %  50 == 0) {
+    if (loop_count %  50 == 0) {
+        #if PRINT_LOOP_FREQUENCY
             Serial.print("Loop running at ");
             Serial.print(filter_last_frequency, 2);
             Serial.println("Hz");
-            LCD.setCursor(0, 1);
-            LCD.print(filter_last_frequency, 1);
-            LCD.print("Hz");
-        }
-    #endif
+        #endif
+        LCD.setCursor(0, 1);
+        LCD.print(filter_last_frequency, 1);
+        LCD.print("Hz");
+    }
 
     #if PRINT_ANGLE
         Serial.print("Angle: ");
@@ -468,8 +468,28 @@ void loop() {
     update_complementary_filter(gy, ax);
     differentiate_angle();
 
-    //int motor_output = (pd_controller_kp * ()) - \
-    //                   (pd_controller_kd * ())
+    float motor_output = (pd_controller_kp * angle) + \
+                         (pd_controller_kd * angular_velocity);
+
+    if (motor_output > 255) {
+        motor_output = 255;
+    } else if (motor_output < -255 ) {
+        motor_output = -255;
+    }
+
+    if (loop_count % 20 == 0) {
+        LCD.setCursor(8, 1);
+        LCD.print(motor_output, 2);
+    }
+
+    if (motor_output > 0) {
+        motors_set_velocity(motor_output, BACKWARDS);
+    } else if (motor_output == 0) {
+        motors_set_velocity(0, FORWARDS);
+    } else if (motor_output < 0) {
+        motors_set_velocity(-motor_output, FORWARDS);
+    }
+
 }
 
 
@@ -580,11 +600,7 @@ void get_imu_data() {
 void update_complementary_filter(float gy, float ax) {
     float dt = (micros() - filter_last_time) / 1000000.0;
     filter_last_time = micros();
-    #if PRINT_LOOP_FREQUENCY
-        // store frequency (in Hz) in filter_last_frequency for later display
-        // if frequency will not be printed later, this doesn't need to run
-        filter_last_frequency = 1/dt;
-    #endif
+    filter_last_frequency = 1/dt;
     angle = filter_constant_a * (angle + gy * dt) + \
             filter_constant_b * ax * radians_to_degrees * -1;
 }
@@ -597,7 +613,9 @@ void differentiate_angle() {
     derivative_last_angle = angle;
 
     if (dt <= 0) {
-        Serial.println("Warning: dt <= 0");
+        #if PRINT_WARNINGS
+            Serial.println("WARNING: dt <= 0");
+        #endif
         LCD.setCursor(0, 0);
         LCD.print("Warning: dt <= 0");
     } else {
