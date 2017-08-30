@@ -32,7 +32,10 @@ unsigned long loop_count;
 #define FORWARDS true
 #define BACKWARDS false
 
-const float motor_controller_gain = 12;
+// Proportional constant (Kp)
+const float pd_controller_kp = 10;
+// Derivative constant (Kd)
+const float pd_controller_kd = 10;
 
 // Define complementary filter variables
 
@@ -50,7 +53,7 @@ const float filter_target_frequency = 100;
 const float filter_target_period = (1.0 / filter_target_frequency);
 
 // First filter constant
-const float filter_constant_a = 0.98;
+const float filter_constant_a = 0.985;
 
 // Second filter constant (must be complementary;
 // filter_constant_a + filter_constant_b === 1)
@@ -58,6 +61,11 @@ const float filter_constant_b = 1.0 - filter_constant_a;
 
 // Used to keep track of time since filter last ran
 unsigned long filter_last_time;
+
+// Used to keep track of time since angle derivative last ran
+unsigned long derivative_last_time;
+float angular_velocity = 0;
+float derivative_last_angle = 0;
 
 // Used to store the last frequency of the filter
 // so that it can be printed occasionally
@@ -71,11 +79,12 @@ const float radians_to_degrees = 57.2957795;
 #define PRINT_ACCEL_DATA false
 #define PRINT_ANGLE false
 #define PLOT_ANGLE true
+#define PLOT_ANGULAR_VELOCITY true
 #define PRINT_DELAY_INFO false
 #define PRINT_GYRO_DATA false
 #define PRINT_LOOP_FREQUENCY false
 #define PRINT_MOTOR_VELOCITY false
-#define PRINT_WARNINGS true
+#define PRINT_WARNINGS false
 #define WAIT_FOR_BUTTON_ON_STARTUP true
 
 // For MPU9255
@@ -417,6 +426,7 @@ void setup() {
     LCD.print("Ready");
     Serial.println("\r\n--------------- SKETCH READY ---------------\r\n");
     filter_last_time = micros();
+    derivative_last_time = micros();
 }
 
 
@@ -440,35 +450,26 @@ void loop() {
         Serial.println("°");
     #elif PLOT_ANGLE
         if (loop_count % 20 == 0) {
-            Serial.println(angle);
+            Serial.print(angle);
         }
+
+        #if PLOT_ANGULAR_VELOCITY
+            if (loop_count % 20 == 0) {
+                Serial.print(",");
+                Serial.println(angular_velocity);
+            }
+        #else
+            Serial.print("\r\n");
+        #endif
     #endif
 
     delay_to_meet_filter_frequency_target();
     get_imu_data();
     update_complementary_filter(gy, ax);
+    differentiate_angle();
 
-    if (angle > 0) {
-        unsigned int power_int = floor(angle*motor_controller_gain);
-        unsigned char power;
-        if (power_int > 255) {
-            power = 255;
-        } else {
-            power = power_int;
-        }
-        motors_set_velocity(power, BACKWARDS);
-    } else if (angle < 0) {
-        unsigned int power_int = floor(angle*motor_controller_gain*-1);
-        unsigned char power;
-        if (power_int > 255) {
-            power = 255;
-        } else {
-            power = power_int;
-        }
-        motors_set_velocity(power, FORWARDS);
-    } else {
-        motors_set_velocity(0, FORWARDS);
-    }
+    //int motor_output = (pd_controller_kp * ()) - \
+    //                   (pd_controller_kd * ())
 }
 
 
@@ -586,6 +587,22 @@ void update_complementary_filter(float gy, float ax) {
     #endif
     angle = filter_constant_a * (angle + gy * dt) + \
             filter_constant_b * ax * radians_to_degrees * -1;
+}
+
+
+void differentiate_angle() {
+    float dt = (micros() - derivative_last_time) / 1000000.0;
+    derivative_last_time = micros();
+    float dtheta = angle - derivative_last_angle;
+    derivative_last_angle = angle;
+
+    if (dt <= 0) {
+        Serial.println("Warning: dt <= 0");
+        LCD.setCursor(0, 0);
+        LCD.print("Warning: dt <= 0");
+    } else {
+        angular_velocity = dtheta / dt;
+    }
 }
 
 
