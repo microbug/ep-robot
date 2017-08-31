@@ -21,6 +21,11 @@ const int pwm_pin_r = 7;
 const int button_pin_1 = 35;
 const int button_pin_2 = 37;
 
+// Define RX pins
+const int rx_pin_channel_1 = 50;
+const int rx_pin_channel_2 = 48;
+const int rx_pin_channel_3 = 46;
+
 unsigned long loop_count;
 
 #define FORWARDS true
@@ -84,6 +89,9 @@ void setup() {
         Serial.println("Completed motor test");
     #endif
 
+    pinMode(rx_pin_channel_1, INPUT);
+    pinMode(rx_pin_channel_2, INPUT);
+    pinMode(rx_pin_channel_3, INPUT);
 
     #if WAIT_FOR_BUTTON_ON_STARTUP
         Serial.println("\r\nWaiting for button");
@@ -121,9 +129,16 @@ void loop() {
 
 
     // Read input values
+    int rx_channel_1 = pulseIn(rx_pin_channel_1, HIGH, 25000);
+    rx_channel_1 = map(rx_channel_1, 906, 1620, 0, 255);
 
-    // Write to motors
+    int rx_channel_2 = pulseIn(rx_pin_channel_2, HIGH, 25000);
+    rx_channel_2 = map(rx_channel_2, 906, 1620, 0, 255);
 
+    Serial.print(rx_channel_1);
+    Serial.print(",");
+    Serial.print(rx_channel_2);
+    Serial.print("\r\n");
 
     loop_count++;
 }
