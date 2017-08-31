@@ -86,9 +86,9 @@ void setup() {
 
 
     #if WAIT_FOR_BUTTON_ON_STARTUP
-        Serial.println("\r\nPlace robot upright and motionless, then press button...");
+        Serial.println("\r\nWaiting for button");
         LCD.setCursor(0, 1);
-        LCD.print("Position & btn..");
+        LCD.print("Press button... ");
 
         // button_pin_1 is 0v, button_pin_2 is an input with internal pullup
         // resistor. When button is pressed, button_pin_2 is pulled low.
