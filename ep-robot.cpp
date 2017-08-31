@@ -33,9 +33,9 @@ unsigned long loop_count;
 #define BACKWARDS false
 
 // Proportional constant (Kp)
-const float pd_controller_kp = 5;
+const float pd_controller_kp = 10;
 // Derivative constant (Kd)
-const float pd_controller_kd = 1;
+const float pd_controller_kd = 5;
 
 // Define complementary filter variables
 
@@ -431,8 +431,6 @@ void setup() {
 
 
 void loop() {
-    loop_count++;
-
     if (loop_count %  50 == 0) {
         #if PRINT_LOOP_FREQUENCY
             Serial.print("Loop running at ");
@@ -466,7 +464,10 @@ void loop() {
     delay_to_meet_filter_frequency_target();
     get_imu_data();
     update_complementary_filter(gy, ax);
-    differentiate_angle();
+    
+    if (loop_count % 10 == 0) {
+        differentiate_angle();
+    }
 
     float motor_output = (pd_controller_kp * angle) + \
                          (pd_controller_kd * angular_velocity);
@@ -490,6 +491,7 @@ void loop() {
         motors_set_velocity(-motor_output, FORWARDS);
     }
 
+    loop_count++;
 }
 
 
