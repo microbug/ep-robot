@@ -26,6 +26,12 @@ const int rx_pin_channel_1 = 50;
 const int rx_pin_channel_2 = 48;
 const int rx_pin_channel_3 = 46;
 
+// Define RX constants
+const int rx_min_channel_1 = 963;
+const int rx_max_channel_1 = 1950;
+const int rx_min_channel_2 = 964;
+const int rx_max_channel_2 = 1947;
+
 unsigned long loop_count;
 
 #define FORWARDS true
@@ -37,7 +43,7 @@ unsigned long loop_count;
 #define PRINT_LOOP_FREQUENCY false
 #define PRINT_MOTOR_VELOCITY false
 #define PRINT_WARNINGS false
-#define WAIT_FOR_BUTTON_ON_STARTUP true
+#define WAIT_FOR_BUTTON_ON_STARTUP false
 
 
 void setup() {
@@ -126,20 +132,19 @@ void setup() {
 
 
 void loop() {
-
-
     // Read input values
-    int rx_channel_1 = pulseIn(rx_pin_channel_1, HIGH, 25000);
-    rx_channel_1 = map(rx_channel_1, 906, 1620, 0, 255);
+    int rx_channel_1_raw = pulseIn(rx_pin_channel_1, HIGH, 25000);
+    int rx_channel_1 = map(rx_channel_1_raw, rx_min_channel_1, rx_max_channel_1, 0, 1000);
 
-    int rx_channel_2 = pulseIn(rx_pin_channel_2, HIGH, 25000);
-    rx_channel_2 = map(rx_channel_2, 906, 1620, 0, 255);
+    int rx_channel_2_raw = pulseIn(rx_pin_channel_2, HIGH, 25000);
+    int rx_channel_2 = map(rx_channel_2_raw, rx_min_channel_2, rx_max_channel_2, -500, 500);
 
-    Serial.print(rx_channel_1);
+    Serial.print(rx_channel_1_raw);
     Serial.print(",");
-    Serial.print(rx_channel_2);
+    Serial.print(rx_channel_1);
     Serial.print("\r\n");
 
+    delay(50);
     loop_count++;
 }
 
