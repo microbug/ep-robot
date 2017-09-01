@@ -27,15 +27,13 @@ const int rx_pin_channel_2 = 48;
 const int rx_pin_channel_3 = 46;
 
 // Define RX constants
-const int rx_min_channel_1 = 963;
-const int rx_max_channel_1 = 1950;
-const int rx_min_channel_2 = 964;
-const int rx_max_channel_2 = 1947;
+const int rx_min = 963;
+const int rx_max = 1950;
 
 unsigned long loop_count;
 
-#define FORWARDS true
-#define BACKWARDS false
+#define LEFT true
+#define RIGHT false
 
 // Various precompiler settings
 #define TEST_MOTORS false
@@ -87,11 +85,13 @@ void setup() {
         LCD.print("Testing motors  ");
         int i;
         for (i = 0; i < 256; i++) {
-            motors_set_velocity(i, FORWARDS);
+            motor_set_velocity(LEFT, i);
+            motor_set_velocity(RIGHT, i);
             delay(10);
         }
         delay(500);
-        motors_set_velocity(0, FORWARDS);
+        motor_set_velocity(LEFT, 0);
+        motor_set_velocity(RIGHT, 0);
         Serial.println("Completed motor test");
     #endif
 
@@ -132,68 +132,57 @@ void setup() {
 
 
 void loop() {
-    // Read input values
+    // Channel 1: throttle
     int rx_channel_1_raw = pulseIn(rx_pin_channel_1, HIGH, 25000);
-    int rx_channel_1 = map(rx_channel_1_raw, rx_min_channel_1, rx_max_channel_1, 0, 1000);
+    int rx_channel_1 = map(rx_channel_1_raw, rx_min, rx_max, -255, 255);
+    rx_channel_1 = constrain(rx_channel_1, -255, 255);
+    if (-5 < rx_channel_1 && rx_channel_1 < 5) {
+        rx_channel_1 = 0;
+    }
 
+    // Channel 2: direction
     int rx_channel_2_raw = pulseIn(rx_pin_channel_2, HIGH, 25000);
-    int rx_channel_2 = map(rx_channel_2_raw, rx_min_channel_2, rx_max_channel_2, -500, 500);
+    int rx_channel_2 = map(rx_channel_2_raw, rx_min, rx_max, -255, 255);
+    rx_channel_2 = constrain(rx_channel_2, -255, 255);
+    if (-5 < rx_channel_2 && rx_channel_2 < 5) {
+        rx_channel_2 = 0;
+    }
 
-    Serial.print(rx_channel_1_raw);
-    Serial.print(",");
-    Serial.print(rx_channel_1);
-    Serial.print("\r\n");
+    int left_motor, right_motor;
+    left_motor = rx_channel_1;
+    right_motor = rx_channel_1;
 
-    delay(50);
+    if (rx_channel_2 != 0) {
+
+    }
+
+    
+
     loop_count++;
 }
 
 
-void left_motor_set_velocity(unsigned char speed, bool clockwise) {
-    /*
-     * int speed: speed from 0 to 255
-     * bool clockwise: whether to turn clockwise or anticlockwise
-     */
-    #if PRINT_MOTOR_VELOCITY
-        Serial.println("Setting left motor velocity");
-    #endif
+void motor_set_velocity(bool motor, int velocity) {
 
-    if (speed == 0) {
-        analogWrite(pwm_pin_l, 0);
+    int pwm_pin, dir1_pin, dir2_pin;
+
+    if (motor == LEFT) {
+        pwm_pin = pwm_pin_l;
+        dir1_pin = dir1_pin_l;
+        dir2_pin = dir2_pin_l;
     } else {
-        analogWrite(pwm_pin_l, speed);
+        pwm_pin = pwm_pin_r;
+        dir1_pin = dir1_pin_r;
+        dir2_pin = dir2_pin_r;
     }
 
-    if (clockwise == true) {
-        digitalWrite(dir1_pin_l, LOW);
-        digitalWrite(dir2_pin_l, HIGH);
-    } else {
-        digitalWrite(dir1_pin_l, HIGH);
-        digitalWrite(dir2_pin_l, LOW);
-    }
-}
+    analogWrite(pwm_pin, abs(velocity));
 
-
-void right_motor_set_velocity(unsigned char speed, bool clockwise) {
-    /*
-     * int speed: speed from 0 to 255
-     * bool clockwise: whether to turn clockwise or anticlockwise
-     */
-    #if PRINT_MOTOR_VELOCITY
-        Serial.println("Setting right motor velocity");
-    #endif
-
-    if (speed == 0) {
-        analogWrite(pwm_pin_r, 0);
-    } else {
-        analogWrite(pwm_pin_r, speed);
-    }
-
-    if (clockwise == true) {
-        digitalWrite(dir1_pin_r, LOW);
-        digitalWrite(dir2_pin_r, HIGH);
-    } else {
-        digitalWrite(dir1_pin_r, HIGH);
-        digitalWrite(dir2_pin_r, LOW);
+    if ((velocity < 0 && motor == LEFT) || (velocity > 0 && motor == RIGHT)) {
+        digitalWrite(dir1_pin, LOW);
+        digitalWrite(dir2_pin, HIGH);
+    } else if ((velocity > 0 && motor == LEFT) || (velocity < 0 && motor == RIGHT)) {
+        digitalWrite(dir1_pin, HIGH);
+        digitalWrite(dir2_pin, LOW);
     }
 }
