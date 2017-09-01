@@ -32,8 +32,8 @@ const int rx_max = 1950;
 
 unsigned long loop_count;
 
-#define LEFT true
-#define RIGHT false
+#define LEFT_MOTOR true
+#define RIGHT_MOTOR false
 
 // Various precompiler settings
 #define TEST_MOTORS false
@@ -85,13 +85,13 @@ void setup() {
         LCD.print("Testing motors  ");
         int i;
         for (i = 0; i < 256; i++) {
-            motor_set_velocity(LEFT, i);
-            motor_set_velocity(RIGHT, i);
+            motor_set_velocity(LEFT_MOTOR, i);
+            motor_set_velocity(RIGHT_MOTOR, i);
             delay(10);
         }
         delay(500);
-        motor_set_velocity(LEFT, 0);
-        motor_set_velocity(RIGHT, 0);
+        motor_set_velocity(LEFT_MOTOR, 0);
+        motor_set_velocity(RIGHT_MOTOR, 0);
         Serial.println("Completed motor test");
     #endif
 
@@ -156,6 +156,8 @@ void loop() {
 
     }
 
+    motor_set_velocity(LEFT_MOTOR, left_motor);
+    motor_set_velocity(RIGHT_MOTOR, right_motor);
     
 
     loop_count++;
@@ -166,7 +168,7 @@ void motor_set_velocity(bool motor, int velocity) {
 
     int pwm_pin, dir1_pin, dir2_pin;
 
-    if (motor == LEFT) {
+    if (motor == LEFT_MOTOR) {
         pwm_pin = pwm_pin_l;
         dir1_pin = dir1_pin_l;
         dir2_pin = dir2_pin_l;
@@ -178,10 +180,10 @@ void motor_set_velocity(bool motor, int velocity) {
 
     analogWrite(pwm_pin, abs(velocity));
 
-    if ((velocity < 0 && motor == LEFT) || (velocity > 0 && motor == RIGHT)) {
+    if ((velocity < 0 && motor == LEFT_MOTOR) || (velocity > 0 && motor == RIGHT_MOTOR)) {
         digitalWrite(dir1_pin, LOW);
         digitalWrite(dir2_pin, HIGH);
-    } else if ((velocity > 0 && motor == LEFT) || (velocity < 0 && motor == RIGHT)) {
+    } else if ((velocity > 0 && motor == LEFT_MOTOR) || (velocity < 0 && motor == RIGHT_MOTOR)) {
         digitalWrite(dir1_pin, HIGH);
         digitalWrite(dir2_pin, LOW);
     }
