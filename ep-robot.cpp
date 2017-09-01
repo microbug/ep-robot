@@ -153,8 +153,17 @@ void loop() {
     right_motor = rx_channel_1;
 
     if (rx_channel_2 != 0) {
-
+        if (rx_channel_1 < 0) {
+            left_motor += (rx_channel_2 / 2);
+            right_motor -= (rx_channel_2 / 2);
+        } else {
+            left_motor -= (rx_channel_2 / 2);
+            right_motor += (rx_channel_2 / 2);
+        }
     }
+
+    left_motor = constrain(left_motor, -255, 255);
+    right_motor = constrain(right_motor, -255, 255);
 
     motor_set_velocity(LEFT_MOTOR, left_motor);
     motor_set_velocity(RIGHT_MOTOR, right_motor);
