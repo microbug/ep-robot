@@ -152,14 +152,12 @@ void loop() {
     left_motor = rx_channel_1;
     right_motor = rx_channel_1;
 
-    if (rx_channel_2 != 0) {
-        if (rx_channel_1 < 0) {
-            left_motor += (rx_channel_2 / 2);
-            right_motor -= (rx_channel_2 / 2);
-        } else {
-            left_motor -= (rx_channel_2 / 2);
-            right_motor += (rx_channel_2 / 2);
-        }
+    if (rx_channel_1 <= 0) {
+        left_motor += (rx_channel_2 / 2);
+        right_motor -= (rx_channel_2 / 2);
+    } else {
+        left_motor -= (rx_channel_2 / 2);
+        right_motor += (rx_channel_2 / 2);
     }
 
     left_motor = constrain(left_motor, -255, 255);
